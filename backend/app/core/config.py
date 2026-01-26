@@ -22,8 +22,12 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/astravaani"
 
-    # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    # CORS - Allow localhost and Vercel domains
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "https://astravaani.vercel.app",
+        "https://astravaani-aagam-botharas-projects.vercel.app",
+    ]
 
     # JWT
     JWT_SECRET_KEY: str = "jwt-secret-change-in-production"
