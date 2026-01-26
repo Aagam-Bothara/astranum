@@ -16,13 +16,14 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create the relationship enum type (checkfirst handles if it already exists)
-    relationship_enum = sa.Enum(
-        'self', 'spouse', 'partner', 'child', 'parent',
-        'sibling', 'friend', 'relative', 'other',
-        name='relationship'
-    )
-    relationship_enum.create(op.get_bind(), checkfirst=True)
+    # Create the relationship enum type using raw SQL with IF NOT EXISTS
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE relationship AS ENUM ('self', 'spouse', 'partner', 'child', 'parent', 'sibling', 'friend', 'relative', 'other');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
 
     # Create person_profiles table
     # Use create_type=False since we created the enum above
