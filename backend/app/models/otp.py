@@ -30,8 +30,12 @@ class OTP(Base, UUIDMixin):
 
     # Target (email or phone number)
     target: Mapped[str] = mapped_column(String(255), index=True)
-    otp_type: Mapped[OTPType] = mapped_column(Enum(OTPType))
-    purpose: Mapped[OTPPurpose] = mapped_column(Enum(OTPPurpose))
+    otp_type: Mapped[str] = mapped_column(
+        Enum('email', 'phone', name='otptype', create_type=False)
+    )
+    purpose: Mapped[str] = mapped_column(
+        Enum('signup', 'login', 'password_reset', name='otppurpose', create_type=False)
+    )
 
     # OTP code (6 digits)
     code: Mapped[str] = mapped_column(String(6))

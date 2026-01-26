@@ -61,8 +61,8 @@ class OTPService:
 
         otp = OTP(
             target=target,
-            otp_type=otp_type,
-            purpose=purpose,
+            otp_type=otp_type.value,  # Use enum value (lowercase)
+            purpose=purpose.value,     # Use enum value (lowercase)
             code=code,
             expires_at=expires_at,
         )
@@ -96,8 +96,8 @@ class OTPService:
             select(OTP).where(
                 and_(
                     OTP.target == target,
-                    OTP.otp_type == otp_type,
-                    OTP.purpose == purpose,
+                    OTP.otp_type == otp_type.value,
+                    OTP.purpose == purpose.value,
                     OTP.is_used == False,
                 )
             ).order_by(OTP.created_at.desc())
@@ -139,8 +139,8 @@ class OTPService:
             select(OTP).where(
                 and_(
                     OTP.target == target,
-                    OTP.otp_type == otp_type,
-                    OTP.purpose == purpose,
+                    OTP.otp_type == otp_type.value,
+                    OTP.purpose == purpose.value,
                     OTP.is_used == False,
                 )
             )
