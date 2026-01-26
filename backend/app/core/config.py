@@ -34,12 +34,14 @@ class Settings(BaseSettings):
             url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
         return url
 
-    # CORS - Allow localhost, Vercel, and Render domains
+    # CORS - Allow localhost, Vercel, Render, and custom domains
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "https://astravaani.vercel.app",
         "https://astravaani-aagam-botharas-projects.vercel.app",
         "https://astravaani-frontend.onrender.com",
+        "https://astravaani.com",
+        "https://www.astravaani.com",
     ]
 
     # JWT
