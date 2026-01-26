@@ -4,7 +4,7 @@ from datetime import date, time, datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
 
-from app.models.person_profile import Relationship
+# Relationship enum values are stored as strings in database
 
 
 class PersonProfileCreate(BaseModel):
@@ -12,7 +12,7 @@ class PersonProfileCreate(BaseModel):
 
     name: str = Field(..., min_length=2, max_length=255, description="Full name for calculations")
     nickname: Optional[str] = Field(None, max_length=100, description="Display name")
-    relationship: Relationship = Field(default=Relationship.SELF, description="Relationship to user")
+    relation_type: str = Field(default="self", description="Relationship to user")
 
     # Birth details
     date_of_birth: date = Field(..., description="Date of birth")
@@ -41,7 +41,7 @@ class PersonProfileUpdate(BaseModel):
 
     name: Optional[str] = Field(None, min_length=2, max_length=255)
     nickname: Optional[str] = Field(None, max_length=100)
-    relationship: Optional[Relationship] = None
+    relation_type: Optional[str] = None
 
     # Birth details
     date_of_birth: Optional[date] = None
@@ -63,7 +63,7 @@ class PersonProfileResponse(BaseModel):
     id: str
     name: str
     nickname: Optional[str]
-    relationship: Relationship
+    relation_type: str
     is_primary: bool
 
     # Birth details
@@ -96,7 +96,7 @@ class PersonProfileSummary(BaseModel):
     id: str
     name: str
     nickname: Optional[str]
-    relationship: Relationship
+    relation_type: str
     is_primary: bool
     avatar_color: Optional[str]
     date_of_birth: date
@@ -119,7 +119,7 @@ class ProfileContextSummary(BaseModel):
 
     profile_id: str
     profile_name: str
-    relationship: Relationship
+    relation_type: str
     recent_topics: List[str]  # Last N conversation topics/themes
     key_insights: List[str]  # Important insights from past conversations
     last_guidance_date: Optional[datetime]

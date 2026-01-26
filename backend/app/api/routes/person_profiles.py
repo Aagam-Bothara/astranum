@@ -89,7 +89,7 @@ async def list_profiles(
                 id=profile.id,
                 name=profile.name,
                 nickname=profile.nickname,
-                relationship=profile.relation_type,
+                relation_type=profile.relation_type,
                 is_primary=profile.is_primary,
                 avatar_color=profile.avatar_color,
                 date_of_birth=profile.date_of_birth,

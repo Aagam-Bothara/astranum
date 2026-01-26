@@ -46,8 +46,10 @@ class PersonProfile(Base, UUIDMixin, TimestampMixin):
     # Profile identification
     name: Mapped[str] = mapped_column(String(255))  # Full name for calculations
     nickname: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # Display name
-    relation_type: Mapped[Relationship] = mapped_column(
-        Enum(Relationship), default=Relationship.SELF
+    relation_type: Mapped[str] = mapped_column(
+        Enum('self', 'spouse', 'partner', 'child', 'parent', 'sibling', 'friend', 'relative', 'other',
+             name='relationship', create_type=False),
+        default='self'
     )
     is_primary: Mapped[bool] = mapped_column(Boolean, default=False)  # User's main profile
 
