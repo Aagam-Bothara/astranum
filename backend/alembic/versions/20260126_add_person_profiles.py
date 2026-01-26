@@ -16,7 +16,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create the relationship enum type
+    # Create the relationship enum type (checkfirst handles if it already exists)
     relationship_enum = sa.Enum(
         'self', 'spouse', 'partner', 'child', 'parent',
         'sibling', 'friend', 'relative', 'other',
@@ -25,13 +25,18 @@ def upgrade() -> None:
     relationship_enum.create(op.get_bind(), checkfirst=True)
 
     # Create person_profiles table
+    # Use create_type=False since we created the enum above
     op.create_table(
         'person_profiles',
         sa.Column('id', sa.String(36), primary_key=True),
         sa.Column('user_id', sa.String(36), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('nickname', sa.String(100), nullable=True),
-        sa.Column('relation_type', relationship_enum, nullable=False, server_default='self'),
+        sa.Column('relation_type', sa.Enum(
+            'self', 'spouse', 'partner', 'child', 'parent',
+            'sibling', 'friend', 'relative', 'other',
+            name='relationship', create_type=False
+        ), nullable=False, server_default='self'),
         sa.Column('is_primary', sa.Boolean(), default=False),
         sa.Column('date_of_birth', sa.Date(), nullable=False),
         sa.Column('time_of_birth', sa.Time(), nullable=True),
