@@ -7,6 +7,7 @@ Create Date: 2026-01-26
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '20260126_add_person_profiles'
@@ -33,7 +34,7 @@ def upgrade() -> None:
         sa.Column('user_id', sa.String(36), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('nickname', sa.String(100), nullable=True),
-        sa.Column('relation_type', sa.Enum(
+        sa.Column('relation_type', postgresql.ENUM(
             'self', 'spouse', 'partner', 'child', 'parent',
             'sibling', 'friend', 'relative', 'other',
             name='relationship', create_type=False
@@ -71,7 +72,7 @@ def upgrade() -> None:
     # Add language and title columns to conversations table (missing from initial)
     op.add_column(
         'conversations',
-        sa.Column('language', sa.Enum('ENGLISH', 'HINDI', 'HINGLISH', name='language', create_type=False), nullable=True)
+        sa.Column('language', postgresql.ENUM('ENGLISH', 'HINDI', 'HINGLISH', name='language', create_type=False), nullable=True)
     )
     op.add_column(
         'conversations',
