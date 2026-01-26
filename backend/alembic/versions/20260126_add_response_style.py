@@ -1,4 +1,4 @@
-"""Add response_style to profiles table
+"""Add response_style to users table
 
 Revision ID: 20260126_add_response_style
 Revises: 20240127_add_phone_otp
@@ -20,9 +20,9 @@ def upgrade() -> None:
     response_style_enum = sa.Enum('supportive', 'balanced', 'direct', name='responsestyle')
     response_style_enum.create(op.get_bind(), checkfirst=True)
 
-    # Add response_style column to profiles table with default 'balanced'
+    # Add response_style column to users table with default 'balanced'
     op.add_column(
-        'profiles',
+        'users',
         sa.Column(
             'response_style',
             response_style_enum,
@@ -34,7 +34,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Remove column
-    op.drop_column('profiles', 'response_style')
+    op.drop_column('users', 'response_style')
 
     # Drop the enum type
     sa.Enum(name='responsestyle').drop(op.get_bind(), checkfirst=True)
