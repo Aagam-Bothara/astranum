@@ -2,6 +2,7 @@
 
 from typing import List
 
+from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,14 +20,26 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     SECRET_KEY: str = "change-this-in-production"
 
-    # Database
+    # Database (Render provides postgres://, we need postgresql+asyncpg://)
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/astravaani"
 
-    # CORS - Allow localhost and Vercel domains
+    @computed_field
+    @property
+    def ASYNC_DATABASE_URL(self) -> str:
+        """Convert postgres:// to postgresql+asyncpg:// for SQLAlchemy async."""
+        url = self.DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
+
+    # CORS - Allow localhost, Vercel, and Render domains
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "https://astravaani.vercel.app",
         "https://astravaani-aagam-botharas-projects.vercel.app",
+        "https://astravaani-frontend.onrender.com",
     ]
 
     # JWT

@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.core.security import decode_access_token
 
 # Database engine and session
-engine = create_async_engine(settings.DATABASE_URL, echo=settings.DEBUG)
+engine = create_async_engine(settings.ASYNC_DATABASE_URL, echo=settings.DEBUG)
 async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 # Security scheme
