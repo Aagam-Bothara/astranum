@@ -17,7 +17,7 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: CORS_ORIGINS
-        value: '["https://astravaani-frontend.onrender.com"]'
+        value: '["https://astravaani-frontend.onrender.com","https://astravaani.com","https://www.astravaani.com"]'
 
   # Frontend
   - type: web
