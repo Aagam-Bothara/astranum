@@ -1,0 +1,6 @@
+nul
+*.db
+*.sqlite3
+__pycache__
+.env
+.pytest_cache
