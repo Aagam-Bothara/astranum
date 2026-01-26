@@ -152,7 +152,7 @@ class PaymentService:
         result = await self.db.execute(
             select(Subscription)
             .where(Subscription.user_id == user_id)
-            .where(Subscription.status == "active")
+            .where(Subscription.status == SubscriptionStatus.ACTIVE.value)
         )
         existing = result.scalar_one_or_none()
 
@@ -173,7 +173,7 @@ class PaymentService:
             subscription = Subscription(
                 user_id=user_id,
                 tier=tier.value if isinstance(tier, SubscriptionTier) else tier,
-                status="active",
+                status=SubscriptionStatus.ACTIVE.value,
                 razorpay_order_id=order_id,
                 razorpay_payment_id=payment_id,
                 current_period_start=now,
@@ -267,7 +267,7 @@ class PaymentService:
         result = await self.db.execute(
             select(Subscription)
             .where(Subscription.user_id == user_id)
-            .where(Subscription.status == "active")
+            .where(Subscription.status == SubscriptionStatus.ACTIVE.value)
         )
         sub = result.scalar_one_or_none()
 
@@ -292,7 +292,7 @@ class PaymentService:
         result = await self.db.execute(
             select(Subscription)
             .where(Subscription.user_id == user_id)
-            .where(Subscription.status == "active")
+            .where(Subscription.status == SubscriptionStatus.ACTIVE.value)
         )
         sub = result.scalar_one_or_none()
 
@@ -324,7 +324,7 @@ class PaymentService:
         result = await self.db.execute(
             select(Subscription)
             .where(Subscription.user_id == user_id)
-            .where(Subscription.status == "active")
+            .where(Subscription.status == SubscriptionStatus.ACTIVE.value)
         )
         sub = result.scalar_one_or_none()
 
@@ -347,15 +347,15 @@ class PaymentService:
 
         result = await self.db.execute(
             select(Subscription)
-            .where(Subscription.status == "active")
+            .where(Subscription.status == SubscriptionStatus.ACTIVE.value)
             .where(Subscription.current_period_end < now)
             .where(Subscription.cancel_at_period_end == True)
         )
         expired = result.scalars().all()
 
         for sub in expired:
-            sub.status = "expired"
-            sub.tier = "free"
+            sub.status = SubscriptionStatus.EXPIRED.value
+            sub.tier = SubscriptionTier.FREE.value
 
         await self.db.commit()
 

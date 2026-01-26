@@ -137,7 +137,7 @@ class CreditsService:
         result = await self.db.execute(
             select(Subscription)
             .where(Subscription.user_id == user_id)
-            .where(Subscription.status == "active")
+            .where(Subscription.status == SubscriptionStatus.ACTIVE.value)
             .order_by(Subscription.created_at.desc())
             .limit(1)
         )
@@ -146,7 +146,8 @@ class CreditsService:
     def _get_tier_enum(self, tier_str: str) -> SubscriptionTier:
         """Convert tier string to enum, handling unknown values gracefully."""
         try:
-            return SubscriptionTier(tier_str.lower() if tier_str else "free")
+            # Database stores uppercase values
+            return SubscriptionTier(tier_str.upper() if tier_str else "FREE")
         except ValueError:
             return SubscriptionTier.FREE
 

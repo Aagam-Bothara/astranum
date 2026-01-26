@@ -13,19 +13,19 @@ from app.models.base import Base, TimestampMixin, UUIDMixin, JSONType
 class SubscriptionTier(str, enum.Enum):
     """Subscription tiers."""
 
-    FREE = "free"
-    STARTER = "starter"  # ₹99
-    PRO = "pro"  # ₹699
-    MAX = "max"  # ₹1999
+    FREE = "FREE"
+    STARTER = "STARTER"  # ₹99
+    PRO = "PRO"  # ₹699
+    MAX = "MAX"  # ₹1999
 
 
 class SubscriptionStatus(str, enum.Enum):
     """Subscription status."""
 
-    ACTIVE = "active"
-    CANCELLED = "cancelled"
-    EXPIRED = "expired"
-    PAUSED = "paused"
+    ACTIVE = "ACTIVE"
+    CANCELLED = "CANCELLED"
+    EXPIRED = "EXPIRED"
+    PAUSED = "PAUSED"
 
 
 class CreditType(str, enum.Enum):
@@ -49,10 +49,12 @@ class Subscription(Base, UUIDMixin, TimestampMixin):
     )
 
     tier: Mapped[str] = mapped_column(
-        String(20), default="free"
+        Enum('FREE', 'STARTER', 'PRO', name='subscriptiontier', create_type=False),
+        default="FREE"
     )
     status: Mapped[str] = mapped_column(
-        String(20), default="active"
+        Enum('ACTIVE', 'CANCELLED', 'EXPIRED', 'PAUSED', name='subscriptionstatus', create_type=False),
+        default="ACTIVE"
     )
 
     # Billing

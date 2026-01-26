@@ -92,12 +92,12 @@ async def get_current_tier(
     Returns FREE tier if no active subscription.
     """
     from sqlalchemy import select
-    from app.models.subscription import Subscription, SubscriptionTier
+    from app.models.subscription import Subscription, SubscriptionTier, SubscriptionStatus
 
     result = await db.execute(
         select(Subscription)
         .where(Subscription.user_id == current_user.id)
-        .where(Subscription.status == "active")
+        .where(Subscription.status == SubscriptionStatus.ACTIVE.value)
         .order_by(Subscription.created_at.desc())
         .limit(1)
     )

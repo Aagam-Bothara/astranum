@@ -34,7 +34,7 @@ async def get_current_subscription(
 
     return SubscriptionResponse(
         tier=tier_config.tier.value if hasattr(tier_config.tier, 'value') else tier_config.tier,
-        status="active",
+        status=SubscriptionStatus.ACTIVE.value,
         current_period_start=None,  # TODO: Get from subscription record
         current_period_end=None,
         price_display=(
@@ -260,19 +260,19 @@ async def check_can_ask_question(
     # Suggest upgrade tiers based on current tier
     upgrade_tiers = []
     if not usage.can_ask_question:
-        if usage.tier == "free":
+        if usage.tier == SubscriptionTier.FREE.value:
             upgrade_tiers = [
-                {"tier": "starter", "price_display": "₹99/month"},
-                {"tier": "pro", "price_display": "₹699/month"},
+                {"tier": "STARTER", "price_display": "₹99/month"},
+                {"tier": "PRO", "price_display": "₹699/month"},
             ]
-        elif usage.tier == "starter":
+        elif usage.tier == SubscriptionTier.STARTER.value:
             upgrade_tiers = [
-                {"tier": "pro", "price_display": "₹699/month"},
-                {"tier": "max", "price_display": "₹1,999/month"},
+                {"tier": "PRO", "price_display": "₹699/month"},
+                {"tier": "MAX", "price_display": "₹1,999/month"},
             ]
-        elif usage.tier == "pro":
+        elif usage.tier == SubscriptionTier.PRO.value:
             upgrade_tiers = [
-                {"tier": "max", "price_display": "₹1,999/month"},
+                {"tier": "MAX", "price_display": "₹1,999/month"},
             ]
 
     return {
