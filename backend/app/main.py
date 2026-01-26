@@ -40,8 +40,18 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api/v1")
 
 
+@app.get("/")
+async def root():
+    """Root endpoint."""
+    return {
+        "name": "AstraVaani API",
+        "version": "0.1.0",
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "astravaani"}
-# force reload v2 - 2026-01-26
