@@ -69,11 +69,18 @@ class PersonProfileService:
             tier: User's subscription tier (for limit checking)
 
         Returns:
-            Created profile
+            Created profile (or existing "self" profile if one exists)
 
         Raises:
-            ValueError: If profile limit reached
+            ValueError: If profile limit reached (and not a duplicate self profile)
         """
+        # For "self" profiles, check if one already exists and return it
+        # This makes the endpoint idempotent for onboarding retries
+        if data.relation_type == "self":
+            existing_self = await self.get_primary_profile(user_id)
+            if existing_self and existing_self.relation_type == "self":
+                return existing_self
+
         can_create, max_profiles = await self.can_create_profile(user_id, tier)
         if not can_create:
             raise ValueError(f"Profile limit reached. Your tier allows {max_profiles} profile(s).")
