@@ -185,7 +185,13 @@ export default function ChatPage() {
             }
           }
         }
-      } catch {
+      } catch (error: any) {
+        // 404 means no profile - redirect to onboarding
+        if (error?.response?.status === 404) {
+          router.push('/onboard');
+          return;
+        }
+        // Other errors (401, network) - redirect to login
         router.push('/login');
         return;
       }
