@@ -2,6 +2,11 @@
 
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Build-time environment variable for API URL
+ARG NEXT_PUBLIC_API_URL=https://astravaani-backend.onrender.com/api/v1
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 COPY package*.json ./
 RUN npm ci
 COPY . .
