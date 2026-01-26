@@ -81,7 +81,7 @@ export default function OnboardPage() {
       await api.updateProfile({
         response_style: responseStyle,
         language: finalData.language,
-        guidance_mode: finalData.mode,
+        guidanceMode: finalData.mode,
       });
 
       // Success - redirect to chat
