@@ -28,8 +28,8 @@ from app.models.person_profile import PersonProfile
 # this is the Alembic Config object
 config = context.config
 
-# Override sqlalchemy.url with app settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Override sqlalchemy.url with app settings (use async URL for asyncpg)
+config.set_main_option("sqlalchemy.url", settings.ASYNC_DATABASE_URL)
 
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:
