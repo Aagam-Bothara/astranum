@@ -1,8 +1,9 @@
 """Application configuration using Pydantic Settings."""
 
-from typing import List
+import json
+from typing import List, Union
 
-from pydantic import computed_field
+from pydantic import computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +15,20 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=True,
     )
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        """Parse CORS_ORIGINS from JSON string or list."""
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+            except json.JSONDecodeError:
+                # Try comma-separated format
+                return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v if isinstance(v, list) else []
 
     # Application
     APP_NAME: str = "AstraVaani"
