@@ -1,18 +1,22 @@
 # AstraVaani Frontend Dockerfile
 
-FROM node:20-alpine
-
+FROM node:20-alpine AS builder
 WORKDIR /app
-
-# Install dependencies
 COPY package*.json ./
-RUN npm install
-
-# Copy application code
+RUN npm ci
 COPY . .
+RUN npm run build
 
-# Expose port
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/next.config.js ./
+
 EXPOSE 3000
 
-# Run development server (use `npm run build && npm start` for production)
-CMD ["npm", "run", "dev"]
+CMD npm start -- -p ${PORT:-3000}
