@@ -18,6 +18,8 @@ services:
         sync: false
       - key: CORS_ORIGINS
         value: '["https://astravaani-frontend.onrender.com","https://astravaani.com","https://www.astravaani.com"]'
+      - key: DEBUG
+        value: "true"
 
   # Frontend
   - type: web
