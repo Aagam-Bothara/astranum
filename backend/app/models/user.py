@@ -41,10 +41,10 @@ class User(Base, UUIDMixin, TimestampMixin):
 
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     phone_number: Mapped[Optional[str]] = mapped_column(String(20), unique=True, index=True, nullable=True)
-    hashed_password: Mapped[str] = mapped_column(String(255))
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
-    is_phone_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_phone_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
 
     # Relationships
     profile: Mapped[Optional["Profile"]] = relationship(

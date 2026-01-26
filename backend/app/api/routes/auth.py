@@ -52,7 +52,7 @@ async def register(
         phone_number=user_data.phone_number,
         hashed_password=get_password_hash(user_data.password),
         is_active=True,
-        is_verified=False,
+        email_verified=False,
         is_phone_verified=False,
     )
 
@@ -65,8 +65,8 @@ async def register(
         email=user.email,
         phone_number=user.phone_number,
         is_active=user.is_active,
-        is_verified=user.is_verified,
-        is_phone_verified=user.is_phone_verified,
+        is_verified=user.email_verified,
+        is_phone_verified=user.is_phone_verified or False,
     )
 
 
@@ -139,7 +139,7 @@ async def verify_otp(
             )
             user = result.scalar_one_or_none()
             if user:
-                user.is_verified = True
+                user.email_verified = True
                 await db.commit()
         else:  # Phone verification
             result = await db.execute(
