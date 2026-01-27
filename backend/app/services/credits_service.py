@@ -68,7 +68,7 @@ class CreditsService:
                 limit_message = f"Monthly limit reached ({limits['monthly']} questions). Upgrade for more."
 
         return UsageStatus(
-            tier=tier.value,
+            tier=tier.value.lower(),
             daily_limit=limits.get("daily", 0),
             daily_used=usage.questions_used_daily,
             daily_remaining=max(0, limits.get("daily", 0) - usage.questions_used_daily),

@@ -33,8 +33,8 @@ async def get_current_subscription(
     tier_config = await credits_service.get_tier_config(current_user.id)
 
     return SubscriptionResponse(
-        tier=tier_config.tier.value if hasattr(tier_config.tier, 'value') else tier_config.tier,
-        status=SubscriptionStatus.ACTIVE.value,
+        tier=(tier_config.tier.value if hasattr(tier_config.tier, 'value') else tier_config.tier).lower(),
+        status=SubscriptionStatus.ACTIVE.value.lower(),
         current_period_start=None,  # TODO: Get from subscription record
         current_period_end=None,
         price_display=(
@@ -158,8 +158,8 @@ async def verify_payment(
 
     return {
         "success": True,
-        "message": f"Subscription upgraded to {tier.value}",
-        "tier": tier.value,
+        "message": f"Subscription upgraded to {tier.value.lower()}",
+        "tier": tier.value.lower(),
         "period_end": subscription.current_period_end.isoformat() if subscription.current_period_end else None,
     }
 
@@ -257,28 +257,28 @@ async def check_can_ask_question(
     credits_service = CreditsService(db)
     usage = await credits_service.check_can_ask(current_user.id)
 
-    # Suggest upgrade tiers based on current tier
+    # Suggest upgrade tiers based on current tier (use lowercase for frontend consistency)
     upgrade_tiers = []
     if not usage.can_ask_question:
-        if usage.tier == SubscriptionTier.FREE.value:
+        if usage.tier.upper() == SubscriptionTier.FREE.value:
             upgrade_tiers = [
-                {"tier": "STARTER", "price_display": "₹99/month"},
-                {"tier": "PRO", "price_display": "₹699/month"},
+                {"tier": "starter", "price_display": "₹99/month"},
+                {"tier": "pro", "price_display": "₹699/month"},
             ]
-        elif usage.tier == SubscriptionTier.STARTER.value:
+        elif usage.tier.upper() == SubscriptionTier.STARTER.value:
             upgrade_tiers = [
-                {"tier": "PRO", "price_display": "₹699/month"},
-                {"tier": "MAX", "price_display": "₹1,999/month"},
+                {"tier": "pro", "price_display": "₹699/month"},
+                {"tier": "max", "price_display": "₹1,999/month"},
             ]
-        elif usage.tier == SubscriptionTier.PRO.value:
+        elif usage.tier.upper() == SubscriptionTier.PRO.value:
             upgrade_tiers = [
-                {"tier": "MAX", "price_display": "₹1,999/month"},
+                {"tier": "max", "price_display": "₹1,999/month"},
             ]
 
     return {
         "can_ask": usage.can_ask_question,
         "message": usage.limit_message,
-        "tier": usage.tier,
+        "tier": usage.tier.lower() if usage.tier else "free",
         "should_upgrade": not usage.can_ask_question,
         "upgrade_tiers": upgrade_tiers,
     }

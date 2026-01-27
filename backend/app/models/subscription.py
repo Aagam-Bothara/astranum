@@ -49,7 +49,7 @@ class Subscription(Base, UUIDMixin, TimestampMixin):
     )
 
     tier: Mapped[str] = mapped_column(
-        Enum('FREE', 'STARTER', 'PRO', name='subscriptiontier', create_type=False),
+        Enum('FREE', 'STARTER', 'PRO', 'MAX', name='subscriptiontier', create_type=False),
         default="FREE"
     )
     status: Mapped[str] = mapped_column(
