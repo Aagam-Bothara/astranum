@@ -108,7 +108,15 @@ export default function PricingPage() {
       if (err.response?.status === 401) {
         router.push('/login?redirect=/pricing');
       } else {
-        setError(err.response?.data?.detail || 'Failed to create order. Please try again.');
+        // Handle both string and array error formats from FastAPI
+        const detail = err.response?.data?.detail;
+        let errorMessage = 'Failed to create order. Please try again.';
+        if (typeof detail === 'string') {
+          errorMessage = detail;
+        } else if (Array.isArray(detail) && detail.length > 0) {
+          errorMessage = detail[0]?.msg || detail[0]?.message || errorMessage;
+        }
+        setError(errorMessage);
       }
     } finally {
       setIsLoading(null);
