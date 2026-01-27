@@ -77,7 +77,7 @@ async def get_profile(
     }
 
 
-@router.patch("/profile", response_model=ProfileResponse)
+@router.patch("/profile")
 async def update_profile(
     profile_data: ProfileUpdate,
     db: AsyncSession = Depends(get_db),
@@ -88,10 +88,46 @@ async def update_profile(
 
     Note: Changing birth details will trigger chart recomputation.
     """
-    # TODO: Implement profile update
-    # 1. Update profile fields
-    # 2. If birth details changed, recompute charts
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Profile update not yet implemented",
+    # Get the primary person profile for this user
+    result = await db.execute(
+        select(PersonProfile).where(
+            PersonProfile.user_id == current_user.id,
+            PersonProfile.is_primary == True,
+            PersonProfile.is_active == True,
+        )
     )
+    profile = result.scalar_one_or_none()
+
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No profile found. Please complete onboarding.",
+        )
+
+    # Update fields if provided
+    update_data = profile_data.model_dump(exclude_unset=True)
+
+    if "full_name" in update_data:
+        profile.name = update_data["full_name"]
+    if "display_name" in update_data:
+        profile.nickname = update_data["display_name"]
+    if "time_of_birth" in update_data:
+        profile.time_of_birth = update_data["time_of_birth"]
+    if "place_of_birth" in update_data:
+        profile.place_of_birth = update_data["place_of_birth"]
+
+    await db.commit()
+    await db.refresh(profile)
+
+    # Return in the format expected by frontend
+    return {
+        "id": profile.id,
+        "full_name": profile.name,
+        "display_name": profile.nickname or profile.name,
+        "date_of_birth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
+        "time_of_birth": profile.time_of_birth.isoformat() if profile.time_of_birth else None,
+        "place_of_birth": profile.place_of_birth,
+        "guidance_mode": "both",
+        "language": "hinglish",
+        "has_birth_time": profile.time_of_birth is not None,
+    }
