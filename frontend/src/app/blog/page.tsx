@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { generateBreadcrumbSchema } from '@/lib/seo';
 import Script from 'next/script';
+import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'Astrology & Numerology Blog - Insights, Guides & Predictions',
@@ -220,6 +221,8 @@ export default function BlogPage() {
           </div>
         </section>
       </main>
+
+      <Footer />
     </>
   );
 }

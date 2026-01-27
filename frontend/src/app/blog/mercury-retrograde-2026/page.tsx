@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Script from 'next/script';
 import { generateBreadcrumbSchema } from '@/lib/seo';
+import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'Mercury Retrograde 2026: Dates, Effects & Survival Tips',
@@ -430,6 +431,8 @@ export default function MercuryRetrograde2026() {
           </Link>
         </div>
       </article>
+
+      <Footer />
     </>
   );
 }

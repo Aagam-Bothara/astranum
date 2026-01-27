@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Script from 'next/script';
 import { generateBreadcrumbSchema } from '@/lib/seo';
+import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'Understanding Your Kundli: A Beginner\'s Guide to Vedic Birth Charts',
@@ -354,6 +355,8 @@ export default function UnderstandingYourKundli() {
           </Link>
         </div>
       </article>
+
+      <Footer />
     </>
   );
 }

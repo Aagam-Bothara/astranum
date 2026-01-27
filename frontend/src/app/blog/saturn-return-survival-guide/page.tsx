@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Script from 'next/script';
 import { generateBreadcrumbSchema } from '@/lib/seo';
+import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'Saturn Return Survival Guide: Navigate Your Late 20s Transformation',
@@ -430,6 +431,8 @@ export default function SaturnReturnSurvivalGuide() {
           </Link>
         </div>
       </article>
+
+      <Footer />
     </>
   );
 }

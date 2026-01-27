@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Script from 'next/script';
 import { generateBreadcrumbSchema } from '@/lib/seo';
+import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'Life Path Number Guide: Calculate Yours & Discover Your Destiny',
@@ -373,6 +374,8 @@ export default function LifePathNumberGuide() {
           </Link>
         </div>
       </article>
+
+      <Footer />
     </>
   );
 }

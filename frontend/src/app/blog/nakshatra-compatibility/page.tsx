@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Script from 'next/script';
 import { generateBreadcrumbSchema } from '@/lib/seo';
+import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'Nakshatra Compatibility Guide: Find Your Perfect Match in Vedic Astrology',
@@ -440,6 +441,8 @@ export default function NakshatraCompatibility() {
           </Link>
         </div>
       </article>
+
+      <Footer />
     </>
   );
 }
