@@ -14,10 +14,12 @@ export function TimePicker({
   placeholder = 'Select time',
 }: TimePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [hours, setHours] = useState<string>('');
-  const [minutes, setMinutes] = useState<string>('');
+  const [hours, setHours] = useState<number>(12);
+  const [minutes, setMinutes] = useState<number>(0);
   const [period, setPeriod] = useState<'AM' | 'PM'>('AM');
   const containerRef = useRef<HTMLDivElement>(null);
+  const hoursRef = useRef<HTMLDivElement>(null);
+  const minutesRef = useRef<HTMLDivElement>(null);
 
   // Parse initial value
   useEffect(() => {
@@ -25,11 +27,27 @@ export function TimePicker({
       const [h, m] = value.split(':');
       const hour24 = parseInt(h, 10);
       const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
-      setHours(hour12.toString().padStart(2, '0'));
-      setMinutes(m);
+      setHours(hour12);
+      setMinutes(parseInt(m, 10));
       setPeriod(hour24 >= 12 ? 'PM' : 'AM');
     }
   }, [value]);
+
+  // Scroll to selected values when opened
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        if (hoursRef.current) {
+          const selectedHour = hoursRef.current.querySelector('[data-selected="true"]');
+          selectedHour?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+        if (minutesRef.current) {
+          const selectedMinute = minutesRef.current.querySelector('[data-selected="true"]');
+          selectedMinute?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [isOpen]);
 
   // Close on outside click
   useEffect(() => {
@@ -42,40 +60,44 @@ export function TimePicker({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleTimeChange = (newHours: string, newMinutes: string, newPeriod: 'AM' | 'PM') => {
-    const h = parseInt(newHours, 10);
-    const hour24 = newPeriod === 'AM'
+  const applyTime = (h: number, m: number, p: 'AM' | 'PM') => {
+    const hour24 = p === 'AM'
       ? (h === 12 ? 0 : h)
       : (h === 12 ? 12 : h + 12);
-    const timeString = `${hour24.toString().padStart(2, '0')}:${newMinutes}`;
+    const timeString = `${hour24.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
     onChange(timeString);
   };
 
   const handleHourSelect = (hour: number) => {
-    const newHours = hour.toString().padStart(2, '0');
-    setHours(newHours);
-    if (minutes) {
-      handleTimeChange(newHours, minutes, period);
-    }
+    setHours(hour);
+    applyTime(hour, minutes, period);
   };
 
   const handleMinuteSelect = (minute: number) => {
-    const newMinutes = minute.toString().padStart(2, '0');
-    setMinutes(newMinutes);
-    if (hours) {
-      handleTimeChange(hours, newMinutes, period);
-    }
+    setMinutes(minute);
+    applyTime(hours, minute, period);
   };
 
   const handlePeriodSelect = (newPeriod: 'AM' | 'PM') => {
     setPeriod(newPeriod);
-    if (hours && minutes) {
-      handleTimeChange(hours, minutes, newPeriod);
-    }
+    applyTime(hours, minutes, newPeriod);
+  };
+
+  const handleQuickSelect = (timeStr: string) => {
+    const [h] = timeStr.split(':');
+    const hour24 = parseInt(h, 10);
+    const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+    const p = hour24 >= 12 ? 'PM' : 'AM';
+
+    setHours(hour12);
+    setMinutes(0);
+    setPeriod(p as 'AM' | 'PM');
+    onChange(timeStr);
+    setIsOpen(false);
   };
 
   const displayValue = value
-    ? `${hours}:${minutes} ${period}`
+    ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`
     : '';
 
   return (
@@ -112,15 +134,19 @@ export function TimePicker({
               {/* Hours */}
               <div className="flex-1">
                 <p className="text-xs text-gray-400 mb-2 text-center">Hour</p>
-                <div className="h-48 overflow-y-auto scrollbar-thin">
-                  <div className="space-y-1">
+                <div
+                  ref={hoursRef}
+                  className="h-40 overflow-y-auto scrollbar-thin scroll-smooth"
+                >
+                  <div className="space-y-1 py-1">
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
                       <button
                         key={hour}
                         type="button"
+                        data-selected={hours === hour}
                         onClick={() => handleHourSelect(hour)}
-                        className={`w-full py-2 px-3 rounded-lg text-center transition-all ${
-                          hours === hour.toString().padStart(2, '0')
+                        className={`w-full py-2.5 px-3 rounded-lg text-center transition-all ${
+                          hours === hour
                             ? 'bg-gradient-to-r from-primary-500 to-cosmic-500 text-white font-semibold'
                             : 'hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
@@ -135,15 +161,19 @@ export function TimePicker({
               {/* Minutes */}
               <div className="flex-1">
                 <p className="text-xs text-gray-400 mb-2 text-center">Minute</p>
-                <div className="h-48 overflow-y-auto scrollbar-thin">
-                  <div className="space-y-1">
+                <div
+                  ref={minutesRef}
+                  className="h-40 overflow-y-auto scrollbar-thin scroll-smooth"
+                >
+                  <div className="space-y-1 py-1">
                     {Array.from({ length: 12 }, (_, i) => i * 5).map((minute) => (
                       <button
                         key={minute}
                         type="button"
+                        data-selected={minutes === minute}
                         onClick={() => handleMinuteSelect(minute)}
-                        className={`w-full py-2 px-3 rounded-lg text-center transition-all ${
-                          minutes === minute.toString().padStart(2, '0')
+                        className={`w-full py-2.5 px-3 rounded-lg text-center transition-all ${
+                          minutes === minute
                             ? 'bg-gradient-to-r from-primary-500 to-cosmic-500 text-white font-semibold'
                             : 'hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
@@ -185,32 +215,29 @@ export function TimePicker({
               </div>
             </div>
 
-            {/* Quick select common times */}
+            {/* Quick select common birth times */}
             <div className="mt-4 pt-3 border-t border-gray-100 dark:border-white/10">
               <p className="text-xs text-gray-400 mb-2">Quick select</p>
               <div className="flex flex-wrap gap-2">
-                {['06:00', '08:00', '10:00', '12:00', '14:00', '18:00', '20:00', '22:00'].map((time) => {
-                  const [h] = time.split(':');
-                  const hour24 = parseInt(h, 10);
-                  const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
-                  const p = hour24 >= 12 ? 'PM' : 'AM';
-                  return (
-                    <button
-                      key={time}
-                      type="button"
-                      onClick={() => {
-                        onChange(time);
-                        setHours(hour12.toString().padStart(2, '0'));
-                        setMinutes('00');
-                        setPeriod(p);
-                        setIsOpen(false);
-                      }}
-                      className="px-3 py-1 text-xs rounded-full bg-gray-100 dark:bg-white/10 hover:bg-primary-100 dark:hover:bg-primary-900/30 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                    >
-                      {hour12}:00 {p}
-                    </button>
-                  );
-                })}
+                {[
+                  { time: '06:00', label: '6 AM' },
+                  { time: '08:00', label: '8 AM' },
+                  { time: '10:00', label: '10 AM' },
+                  { time: '12:00', label: '12 PM' },
+                  { time: '14:00', label: '2 PM' },
+                  { time: '18:00', label: '6 PM' },
+                  { time: '20:00', label: '8 PM' },
+                  { time: '22:00', label: '10 PM' },
+                ].map(({ time, label }) => (
+                  <button
+                    key={time}
+                    type="button"
+                    onClick={() => handleQuickSelect(time)}
+                    className="px-3 py-1.5 text-xs rounded-full bg-gray-100 dark:bg-white/10 hover:bg-primary-100 dark:hover:bg-primary-900/30 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -220,7 +247,7 @@ export function TimePicker({
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="w-full py-2 bg-gradient-to-r from-primary-600 to-cosmic-600 text-white rounded-lg font-medium hover:from-primary-500 hover:to-cosmic-500 transition-all"
+              className="w-full py-2.5 bg-gradient-to-r from-primary-600 to-cosmic-600 text-white rounded-lg font-medium hover:from-primary-500 hover:to-cosmic-500 transition-all"
             >
               Done
             </button>

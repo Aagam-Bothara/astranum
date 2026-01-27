@@ -1,9 +1,7 @@
 'use client';
 
-import { forwardRef, useState } from 'react';
-import ReactDatePicker from 'react-datepicker';
-import { format, getYear, getMonth } from 'date-fns';
-import 'react-datepicker/dist/react-datepicker.css';
+import { useState, useRef, useEffect } from 'react';
+import { format, getYear, getMonth, getDaysInMonth, startOfMonth, getDay } from 'date-fns';
 
 interface DatePickerProps {
   value: string;
@@ -23,36 +21,121 @@ export function DatePicker({
   minDate,
 }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => {
+    if (value) return new Date(value);
+    return new Date();
+  });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedDate = value ? new Date(value) : null;
+  const currentYear = getYear(new Date());
 
+  // Generate years from 1920 to current year
   const years = Array.from(
-    { length: 100 },
-    (_, i) => getYear(new Date()) - i
+    { length: currentYear - 1919 },
+    (_, i) => currentYear - i
   );
 
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ];
 
-  const handleChange = (date: Date | null) => {
-    if (date) {
-      onChange(format(date, 'yyyy-MM-dd'));
+  const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+  // Close on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Update viewDate when value changes
+  useEffect(() => {
+    if (value) {
+      setViewDate(new Date(value));
     }
+  }, [value]);
+
+  const handleDateSelect = (day: number) => {
+    const newDate = new Date(getYear(viewDate), getMonth(viewDate), day);
+    onChange(format(newDate, 'yyyy-MM-dd'));
     setIsOpen(false);
   };
 
-  const CustomInput = forwardRef<HTMLButtonElement, { value?: string; onClick?: () => void }>(
-    ({ value, onClick }, ref) => (
+  const changeMonth = (delta: number) => {
+    const newDate = new Date(viewDate);
+    newDate.setMonth(newDate.getMonth() + delta);
+    setViewDate(newDate);
+  };
+
+  const changeYear = (year: number) => {
+    const newDate = new Date(viewDate);
+    newDate.setFullYear(year);
+    setViewDate(newDate);
+  };
+
+  const changeMonthDirect = (month: number) => {
+    const newDate = new Date(viewDate);
+    newDate.setMonth(month);
+    setViewDate(newDate);
+  };
+
+  // Generate calendar days
+  const daysInMonth = getDaysInMonth(viewDate);
+  const firstDayOfMonth = getDay(startOfMonth(viewDate));
+  const days: (number | null)[] = [];
+
+  // Add empty slots for days before the first day of the month
+  for (let i = 0; i < firstDayOfMonth; i++) {
+    days.push(null);
+  }
+
+  // Add days of the month
+  for (let i = 1; i <= daysInMonth; i++) {
+    days.push(i);
+  }
+
+  const isDateDisabled = (day: number) => {
+    const date = new Date(getYear(viewDate), getMonth(viewDate), day);
+    if (maxDate && date > maxDate) return true;
+    if (minDate && date < minDate) return true;
+    return false;
+  };
+
+  const isSelected = (day: number) => {
+    if (!selectedDate) return false;
+    return (
+      day === selectedDate.getDate() &&
+      getMonth(viewDate) === selectedDate.getMonth() &&
+      getYear(viewDate) === selectedDate.getFullYear()
+    );
+  };
+
+  const isToday = (day: number) => {
+    const today = new Date();
+    return (
+      day === today.getDate() &&
+      getMonth(viewDate) === today.getMonth() &&
+      getYear(viewDate) === today.getFullYear()
+    );
+  };
+
+  const displayValue = selectedDate ? format(selectedDate, 'dd MMM yyyy') : '';
+
+  return (
+    <div ref={containerRef} className="relative">
       <button
         type="button"
-        ref={ref}
-        onClick={onClick}
+        onClick={() => setIsOpen(!isOpen)}
         className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all text-left flex items-center justify-between group"
       >
-        <span className={value ? 'text-gray-900 dark:text-white' : 'text-gray-400'}>
-          {value || placeholder}
+        <span className={displayValue ? 'text-gray-900 dark:text-white' : 'text-gray-400'}>
+          {displayValue || placeholder}
         </span>
         <svg
           className="w-5 h-5 text-gray-400 group-hover:text-primary-500 transition-colors"
@@ -68,39 +151,15 @@ export function DatePicker({
           />
         </svg>
       </button>
-    )
-  );
-  CustomInput.displayName = 'CustomInput';
 
-  return (
-    <div className="relative">
-      <ReactDatePicker
-        selected={selectedDate}
-        onChange={handleChange}
-        onCalendarOpen={() => setIsOpen(true)}
-        onCalendarClose={() => setIsOpen(false)}
-        customInput={<CustomInput />}
-        maxDate={maxDate}
-        minDate={minDate}
-        showPopperArrow={false}
-        dateFormat="dd MMM yyyy"
-        popperClassName="date-picker-popper"
-        calendarClassName="custom-calendar"
-        renderCustomHeader={({
-          date,
-          changeYear,
-          changeMonth,
-          decreaseMonth,
-          increaseMonth,
-          prevMonthButtonDisabled,
-          nextMonthButtonDisabled,
-        }) => (
-          <div className="flex items-center justify-between px-2 py-2 bg-white dark:bg-gray-800">
+      {isOpen && (
+        <div className="absolute z-50 mt-2 w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+          {/* Header with month/year navigation */}
+          <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-white/10">
             <button
               type="button"
-              onClick={decreaseMonth}
-              disabled={prevMonthButtonDisabled}
-              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-30 transition-colors"
+              onClick={() => changeMonth(-1)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -109,22 +168,20 @@ export function DatePicker({
 
             <div className="flex gap-2">
               <select
-                value={months[getMonth(date)]}
-                onChange={({ target: { value } }) =>
-                  changeMonth(months.indexOf(value))
-                }
+                value={getMonth(viewDate)}
+                onChange={(e) => changeMonthDirect(Number(e.target.value))}
                 className="px-2 py-1 rounded-lg bg-gray-100 dark:bg-white/10 border-0 text-sm font-medium focus:ring-2 focus:ring-primary-500 cursor-pointer"
               >
-                {months.map((month) => (
-                  <option key={month} value={month}>
+                {months.map((month, idx) => (
+                  <option key={month} value={idx}>
                     {month}
                   </option>
                 ))}
               </select>
 
               <select
-                value={getYear(date)}
-                onChange={({ target: { value } }) => changeYear(Number(value))}
+                value={getYear(viewDate)}
+                onChange={(e) => changeYear(Number(e.target.value))}
                 className="px-2 py-1 rounded-lg bg-gray-100 dark:bg-white/10 border-0 text-sm font-medium focus:ring-2 focus:ring-primary-500 cursor-pointer"
               >
                 {years.map((year) => (
@@ -137,140 +194,68 @@ export function DatePicker({
 
             <button
               type="button"
-              onClick={increaseMonth}
-              disabled={nextMonthButtonDisabled}
-              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-30 transition-colors"
+              onClick={() => changeMonth(1)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </div>
-        )}
-      />
 
-      <style jsx global>{`
-        .date-picker-popper {
-          z-index: 50 !important;
-        }
+          {/* Weekday headers */}
+          <div className="grid grid-cols-7 gap-1 px-3 py-2 bg-gray-50 dark:bg-white/5">
+            {weekDays.map((day) => (
+              <div key={day} className="text-center text-xs font-medium text-gray-500 dark:text-gray-400">
+                {day}
+              </div>
+            ))}
+          </div>
 
-        .custom-calendar {
-          font-family: inherit !important;
-          border: 1px solid rgba(0, 0, 0, 0.1) !important;
-          border-radius: 16px !important;
-          overflow: hidden !important;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
-        }
+          {/* Calendar days */}
+          <div className="grid grid-cols-7 gap-1 p-3">
+            {days.map((day, idx) => (
+              <div key={idx} className="aspect-square">
+                {day !== null ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDateSelect(day)}
+                    disabled={isDateDisabled(day)}
+                    className={`w-full h-full rounded-lg text-sm font-medium transition-all ${
+                      isSelected(day)
+                        ? 'bg-gradient-to-r from-primary-500 to-cosmic-500 text-white'
+                        : isToday(day)
+                        ? 'border-2 border-primary-500 text-primary-600 dark:text-primary-400'
+                        : isDateDisabled(day)
+                        ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                        : 'hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {day}
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
 
-        .dark .custom-calendar {
-          background: #1f2937 !important;
-          border-color: rgba(255, 255, 255, 0.1) !important;
-          color: white !important;
-        }
-
-        .react-datepicker__header {
-          background: white !important;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-          padding: 0 !important;
-        }
-
-        .dark .react-datepicker__header {
-          background: #1f2937 !important;
-          border-bottom-color: rgba(255, 255, 255, 0.1) !important;
-        }
-
-        .react-datepicker__day-names {
-          display: flex !important;
-          justify-content: space-around !important;
-          padding: 8px 0 !important;
-          background: #f9fafb !important;
-        }
-
-        .dark .react-datepicker__day-names {
-          background: rgba(255, 255, 255, 0.05) !important;
-        }
-
-        .react-datepicker__day-name {
-          color: #6b7280 !important;
-          font-weight: 500 !important;
-          font-size: 12px !important;
-          width: 36px !important;
-          line-height: 36px !important;
-          margin: 0 !important;
-        }
-
-        .dark .react-datepicker__day-name {
-          color: #9ca3af !important;
-        }
-
-        .react-datepicker__month {
-          margin: 0 !important;
-          padding: 8px !important;
-        }
-
-        .react-datepicker__week {
-          display: flex !important;
-          justify-content: space-around !important;
-        }
-
-        .react-datepicker__day {
-          width: 36px !important;
-          height: 36px !important;
-          line-height: 36px !important;
-          margin: 2px !important;
-          border-radius: 10px !important;
-          font-size: 14px !important;
-          color: #374151 !important;
-          transition: all 0.15s !important;
-        }
-
-        .dark .react-datepicker__day {
-          color: #e5e7eb !important;
-        }
-
-        .react-datepicker__day:hover {
-          background: #f3f4f6 !important;
-          border-radius: 10px !important;
-        }
-
-        .dark .react-datepicker__day:hover {
-          background: rgba(255, 255, 255, 0.1) !important;
-        }
-
-        .react-datepicker__day--selected,
-        .react-datepicker__day--keyboard-selected {
-          background: linear-gradient(to right, #c026d3, #4f46e5) !important;
-          color: white !important;
-          font-weight: 600 !important;
-        }
-
-        .react-datepicker__day--selected:hover,
-        .react-datepicker__day--keyboard-selected:hover {
-          background: linear-gradient(to right, #a21caf, #4338ca) !important;
-        }
-
-        .react-datepicker__day--today {
-          font-weight: 600 !important;
-          border: 2px solid #c026d3 !important;
-        }
-
-        .react-datepicker__day--outside-month {
-          color: #d1d5db !important;
-        }
-
-        .dark .react-datepicker__day--outside-month {
-          color: #4b5563 !important;
-        }
-
-        .react-datepicker__day--disabled {
-          color: #e5e7eb !important;
-          cursor: not-allowed !important;
-        }
-
-        .dark .react-datepicker__day--disabled {
-          color: #374151 !important;
-        }
-      `}</style>
+          {/* Quick select for common birth years */}
+          <div className="px-3 pb-3 border-t border-gray-100 dark:border-white/10 pt-2">
+            <p className="text-xs text-gray-400 mb-2">Quick select year</p>
+            <div className="flex flex-wrap gap-1">
+              {[1990, 1995, 2000, 2005].map((year) => (
+                <button
+                  key={year}
+                  type="button"
+                  onClick={() => changeYear(year)}
+                  className="px-3 py-1 text-xs rounded-full bg-gray-100 dark:bg-white/10 hover:bg-primary-100 dark:hover:bg-primary-900/30 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
