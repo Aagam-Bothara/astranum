@@ -123,7 +123,7 @@ export default function ChatPage() {
       try {
         const profileResponse = await api.getProfile();
         const userData = profileResponse.data as any;
-        const currentUserId = userData?.id || userData?.user_id;
+        const currentUserId = userData?.user_id || userData?.id;
 
         if (currentUserId) {
           setUserId(currentUserId);

@@ -66,6 +66,7 @@ async def get_profile(
     # Return in the format expected by frontend
     return {
         "id": profile.id,
+        "user_id": current_user.id,  # For localStorage key consistency
         "full_name": profile.name,
         "display_name": profile.nickname or profile.name,
         "date_of_birth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
@@ -122,6 +123,7 @@ async def update_profile(
     # Return in the format expected by frontend
     return {
         "id": profile.id,
+        "user_id": current_user.id,  # For localStorage key consistency
         "full_name": profile.name,
         "display_name": profile.nickname or profile.name,
         "date_of_birth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
