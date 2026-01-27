@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7C3AED"/>
+      <stop offset="100%" style="stop-color:#4F46E5"/>
+    </linearGradient>
+    <linearGradient id="star" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F59E0B"/>
+      <stop offset="100%" style="stop-color:#FBBF24"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <circle cx="256" cy="256" r="256" fill="url(#grad)"/>
+
+  <!-- Star -->
+  <path d="M256 60 L284 190 L420 190 L312 270 L344 400 L256 320 L168 400 L200 270 L92 190 L228 190 Z" fill="url(#star)"/>
+
+  <!-- A letter -->
+  <text x="256" y="285" font-family="Arial, sans-serif" font-size="100" font-weight="bold" fill="white" text-anchor="middle">A</text>
+</svg>
