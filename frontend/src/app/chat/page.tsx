@@ -201,9 +201,9 @@ export default function ChatPage() {
         const response = await api.checkUsage();
         const data = response.data as any;
         if (data) {
-          const tier = data.usage?.tier || 'free';
+          const tier = (data.usage?.tier || 'free').toLowerCase();
           setUsage({
-            tier,
+            tier: tier as 'free' | 'starter' | 'pro',
             dailyRemaining: data.usage?.daily_remaining ?? data.usage?.dailyRemaining ?? 0,
             monthlyRemaining: data.usage?.monthly_remaining ?? data.usage?.monthlyRemaining ?? 0,
             lifetimeRemaining: data.usage?.lifetime_remaining ?? data.usage?.lifetimeRemaining,
@@ -323,9 +323,9 @@ export default function ChatPage() {
       try {
         const usageResponse = await api.checkUsage();
         const usageData = usageResponse.data as any;
-        const tier = usageData?.usage?.tier || 'free';
+        const tier = (usageData?.usage?.tier || 'free').toLowerCase();
         setUsage({
-          tier,
+          tier: tier as 'free' | 'starter' | 'pro',
           dailyRemaining: usageData?.usage?.daily_remaining ?? usageData?.usage?.dailyRemaining ?? 0,
           monthlyRemaining: usageData?.usage?.monthly_remaining ?? usageData?.usage?.monthlyRemaining ?? 0,
           lifetimeRemaining: usageData?.usage?.lifetime_remaining ?? usageData?.usage?.lifetimeRemaining,
