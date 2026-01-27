@@ -59,9 +59,9 @@ async def get_usage_status(
     return await credits_service.check_can_ask(current_user.id)
 
 
-@router.post("/upgrade/{tier}")
+@router.post("/upgrade/{tier_name}")
 async def upgrade_subscription(
-    tier: SubscriptionTier,
+    tier_name: str,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -71,12 +71,21 @@ async def upgrade_subscription(
     Returns payment order for Razorpay integration.
 
     Flow:
-    1. Client calls this endpoint with target tier
+    1. Client calls this endpoint with target tier (case-insensitive)
     2. Server creates Razorpay order
     3. Client completes payment using Razorpay SDK
     4. Client calls /verify-payment with payment details
     5. Server verifies and activates subscription
     """
+    # Convert tier name to enum (case-insensitive)
+    try:
+        tier = SubscriptionTier(tier_name.upper())
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid tier: {tier_name}. Valid tiers are: starter, pro, max",
+        )
+
     if tier == SubscriptionTier.FREE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -237,9 +246,16 @@ async def get_available_plans():
     return {"plans": plans}
 
 
-@router.get("/plans/{tier}")
-async def get_plan_details(tier: SubscriptionTier):
-    """Get detailed information about a specific plan."""
+@router.get("/plans/{tier_name}")
+async def get_plan_details(tier_name: str):
+    """Get detailed information about a specific plan (case-insensitive)."""
+    try:
+        tier = SubscriptionTier(tier_name.upper())
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid tier: {tier_name}",
+        )
     return get_tier_display_info(tier)
 
 
