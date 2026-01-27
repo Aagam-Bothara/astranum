@@ -65,7 +65,7 @@ export default function GoogleSignIn({ onSuccess, onError, buttonText = 'signin_
             theme: 'outline',
             size: 'large',
             text: buttonText,
-            width: '100%',
+            width: 350,
             logo_alignment: 'left',
           });
         }
