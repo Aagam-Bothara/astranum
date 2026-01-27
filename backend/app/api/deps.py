@@ -82,6 +82,23 @@ async def get_current_user_optional(
     return await get_current_user(credentials, db)
 
 
+async def get_admin_user(
+    current_user=Depends(get_current_user),
+):
+    """
+    Verify that the current user has admin privileges.
+
+    Checks if user's email is in ADMIN_EMAILS env variable.
+    Raises 403 Forbidden if not an admin.
+    """
+    if current_user.email and current_user.email.lower() in settings.ADMIN_EMAILS:
+        return current_user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Admin access required",
+    )
+
+
 async def get_current_tier(
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

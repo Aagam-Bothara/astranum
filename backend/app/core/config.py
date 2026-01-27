@@ -30,6 +30,14 @@ class Settings(BaseSettings):
                 return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v if isinstance(v, list) else []
 
+    @field_validator("ADMIN_EMAILS", mode="before")
+    @classmethod
+    def parse_admin_emails(cls, v: Union[str, List[str]]) -> List[str]:
+        """Parse ADMIN_EMAILS from comma-separated string or list."""
+        if isinstance(v, str):
+            return [email.strip().lower() for email in v.split(",") if email.strip()]
+        return [e.lower() for e in v] if isinstance(v, list) else []
+
     # Application
     APP_NAME: str = "AstraVaani"
     DEBUG: bool = False
@@ -98,6 +106,9 @@ class Settings(BaseSettings):
     # Email (Resend)
     RESEND_API_KEY: str = ""
     FROM_EMAIL: str = "onboarding@resend.dev"
+
+    # Admin Access (comma-separated list of admin emails)
+    ADMIN_EMAILS: List[str] = []
 
 
 settings = Settings()

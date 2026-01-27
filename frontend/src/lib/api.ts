@@ -11,6 +11,9 @@ import type {
   Subscription,
   UsageStatus,
   UserProfile,
+  AdminStats,
+  AdminUserList,
+  AdminSubscriptionList,
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
@@ -234,6 +237,47 @@ class ApiClient {
 
   async setPrimaryProfile(profileId: string): Promise<ApiResponse<any>> {
     const response = await this.client.post(`/person-profiles/${profileId}/set-primary`);
+    return { data: response.data };
+  }
+
+  // Admin endpoints
+  async getAdminStats(): Promise<ApiResponse<AdminStats>> {
+    const response = await this.client.get('/admin/stats');
+    return { data: response.data };
+  }
+
+  async getAdminUsers(params?: {
+    page?: number;
+    page_size?: number;
+    search?: string;
+    tier?: string;
+  }): Promise<ApiResponse<AdminUserList>> {
+    const response = await this.client.get('/admin/users', { params });
+    return { data: response.data };
+  }
+
+  async getAdminUser(userId: string): Promise<ApiResponse<any>> {
+    const response = await this.client.get(`/admin/users/${userId}`);
+    return { data: response.data };
+  }
+
+  async changeUserTier(userId: string, tier: string): Promise<ApiResponse<{ success: boolean; message: string; new_tier: string }>> {
+    const response = await this.client.post(`/admin/users/${userId}/change-tier`, { tier });
+    return { data: response.data };
+  }
+
+  async toggleUserActive(userId: string): Promise<ApiResponse<{ success: boolean; is_active: boolean }>> {
+    const response = await this.client.post(`/admin/users/${userId}/toggle-active`);
+    return { data: response.data };
+  }
+
+  async getAdminSubscriptions(params?: {
+    page?: number;
+    page_size?: number;
+    status_filter?: string;
+    tier_filter?: string;
+  }): Promise<ApiResponse<AdminSubscriptionList>> {
+    const response = await this.client.get('/admin/subscriptions', { params });
     return { data: response.data };
   }
 }

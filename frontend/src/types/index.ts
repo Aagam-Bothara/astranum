@@ -137,3 +137,62 @@ export interface ApiResponse<T> {
     message: string;
   };
 }
+
+// Admin types
+export interface TierBreakdown {
+  tier: string;
+  count: number;
+}
+
+export interface AdminStats {
+  total_users: number;
+  active_users_30d: number;
+  total_subscriptions: number;
+  active_subscriptions: number;
+  revenue_this_month_paise: number;
+  revenue_total_paise: number;
+  questions_today: number;
+  questions_this_month: number;
+  tier_breakdown: TierBreakdown[];
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  phone_number?: string;
+  full_name?: string;
+  tier: string;
+  status: string;
+  is_active: boolean;
+  questions_used_monthly: number;
+  created_at: string;
+}
+
+export interface AdminUserList {
+  users: AdminUser[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface AdminSubscription {
+  id: string;
+  user_email: string;
+  user_name?: string;
+  tier: string;
+  status: string;
+  amount_paise: number;
+  razorpay_payment_id?: string;
+  razorpay_order_id?: string;
+  current_period_start?: string;
+  current_period_end?: string;
+  cancel_at_period_end: boolean;
+  created_at: string;
+}
+
+export interface AdminSubscriptionList {
+  subscriptions: AdminSubscription[];
+  total: number;
+  page: number;
+  page_size: number;
+}
