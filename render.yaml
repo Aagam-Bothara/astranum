@@ -16,6 +16,14 @@ services:
         generateValue: true
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        value: noreply@astravaani.com
       - key: CORS_ORIGINS
         value: '["https://astravaani-frontend.onrender.com","https://astravaani.com","https://www.astravaani.com"]'
       - key: DEBUG
@@ -30,6 +38,10 @@ services:
     envVars:
       - key: NEXT_PUBLIC_API_URL
         value: https://astravaani-backend.onrender.com/api/v1
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://astravaani.com
+      - key: NEXT_PUBLIC_GOOGLE_CLIENT_ID
+        sync: false
 
 databases:
   - name: astravaani-db

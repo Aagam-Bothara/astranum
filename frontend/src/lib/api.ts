@@ -100,6 +100,24 @@ class ApiClient {
     this.clearToken();
   }
 
+  async forgotPassword(email: string): Promise<ApiResponse<{ message: string; expires_in_minutes: number }>> {
+    const response = await this.client.post('/auth/forgot-password', { email });
+    return { data: response.data };
+  }
+
+  async resetPassword(email: string, code: string, new_password: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await this.client.post('/auth/reset-password', { email, code, new_password });
+    return { data: response.data };
+  }
+
+  async googleAuth(credential: string): Promise<ApiResponse<{ access_token: string }>> {
+    const response = await this.client.post('/auth/google', { credential });
+    if (response.data.access_token) {
+      this.setToken(response.data.access_token);
+    }
+    return { data: response.data };
+  }
+
   // User endpoints
   async getProfile(): Promise<ApiResponse<UserProfile>> {
     const response = await this.client.get('/users/profile');

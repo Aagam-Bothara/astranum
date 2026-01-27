@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
+import GoogleSignIn from '@/components/GoogleSignIn';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -70,12 +71,20 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Password
-            </label>
+            <div className="flex justify-between items-center mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Password
+              </label>
+              <Link
+                href="/forgot-password"
+                className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
+              >
+                Forgot Password?
+              </Link>
+            </div>
             <input
               id="password"
               type="password"
@@ -94,6 +103,23 @@ export default function LoginPage() {
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+                or continue with
+              </span>
+            </div>
+          </div>
+
+          <GoogleSignIn
+            onSuccess={() => router.push('/chat')}
+            onError={(err) => setError(err)}
+            buttonText="signin_with"
+          />
         </form>
 
         <p className="mt-8 text-center text-gray-600 dark:text-gray-400">

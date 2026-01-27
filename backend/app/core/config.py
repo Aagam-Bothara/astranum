@@ -91,6 +91,10 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:3000"
     BACKEND_URL: str = "http://localhost:8000"
 
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
     # Email (Resend)
     RESEND_API_KEY: str = ""
     FROM_EMAIL: str = "onboarding@resend.dev"

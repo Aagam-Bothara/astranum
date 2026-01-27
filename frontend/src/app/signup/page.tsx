@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
+import GoogleSignIn from '@/components/GoogleSignIn';
 
 type Step = 'details' | 'verify';
 
@@ -259,6 +260,23 @@ export default function SignupPage() {
             >
               {isLoading ? 'Creating account...' : 'Create Account'}
             </button>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+                  or continue with
+                </span>
+              </div>
+            </div>
+
+            <GoogleSignIn
+              onSuccess={() => router.push('/onboard')}
+              onError={(err) => setError(err)}
+              buttonText="signup_with"
+            />
           </form>
         ) : (
           <form onSubmit={handleVerifyOTP} className="space-y-5">
