@@ -1,16 +1,78 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { api } from '@/lib/api';
 
 export default function HomeClient() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        api.loadToken();
+        const response = await api.getProfile();
+        const data = response.data as any;
+        if (data) {
+          setIsLoggedIn(true);
+          setUserName(data.display_name || data.full_name || data.fullName || null);
+        }
+      } catch {
+        setIsLoggedIn(false);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+    checkAuth();
+  }, []);
+
   return (
     <main className="min-h-screen">
-      {/* Theme toggle - fixed top right */}
-      <div className="fixed top-4 right-4 z-50">
-        <ThemeToggle />
-      </div>
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <Link href="/" className="text-xl font-bold gradient-text">
+            AstraVaani
+          </Link>
+
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+
+            {!checkingAuth && (
+              isLoggedIn ? (
+                <Link
+                  href="/chat"
+                  className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur border border-white/20 rounded-full hover:bg-white/20 transition-all"
+                >
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-cosmic-500 flex items-center justify-center text-white text-sm font-medium">
+                    {userName?.charAt(0)?.toUpperCase() || 'U'}
+                  </div>
+                  <span className="text-sm font-medium hidden sm:inline">Go to Chat</span>
+                </Link>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/login"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-primary-600 to-cosmic-600 text-white rounded-full hover:from-primary-500 hover:to-cosmic-500 transition-all"
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      </header>
 
       {/* Hero Section */}
       <section className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">
