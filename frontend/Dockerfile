@@ -3,9 +3,13 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Build-time environment variable for API URL
+# Build-time environment variables (NEXT_PUBLIC_* must be available at build time)
 ARG NEXT_PUBLIC_API_URL=https://astravaani-backend.onrender.com/api/v1
+ARG NEXT_PUBLIC_SITE_URL=https://astravaani.com
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
 COPY package*.json ./
 RUN npm ci
