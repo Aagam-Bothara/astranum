@@ -6,9 +6,9 @@ export default function Footer() {
   return (
     <footer className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-white/10">
       <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
-          <div className="col-span-1 md:col-span-2">
+          <div className="col-span-2">
             <Link href="/" className="text-2xl font-bold gradient-text">
               AstraVaani
             </Link>
@@ -40,6 +40,33 @@ export default function Footer() {
               <li>
                 <Link href="/chat" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
                   Start Chat
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Blog */}
+          <div>
+            <h3 className="font-semibold mb-4">Blog</h3>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/blog" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                  All Articles
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog/2026-cosmic-forecast" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                  2026 Forecast
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog/life-path-number-guide" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                  Life Path Numbers
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog/understanding-your-kundli" className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                  Kundli Guide
                 </Link>
               </li>
             </ul>
