@@ -3,7 +3,7 @@
 import json
 from typing import List, Union
 
-from pydantic import computed_field, field_validator
+from pydantic import computed_field, field_validator, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,24 +30,6 @@ class Settings(BaseSettings):
                 return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v if isinstance(v, list) else []
 
-    @field_validator("ADMIN_EMAILS", mode="before")
-    @classmethod
-    def parse_admin_emails(cls, v: Union[str, List[str], None]) -> List[str]:
-        """Parse ADMIN_EMAILS from comma-separated string, JSON, or list."""
-        if v is None or v == "":
-            return []
-        if isinstance(v, str):
-            # Try JSON first (for ["email1", "email2"] format)
-            if v.startswith("["):
-                try:
-                    parsed = json.loads(v)
-                    if isinstance(parsed, list):
-                        return [e.strip().lower() for e in parsed if e and isinstance(e, str)]
-                except json.JSONDecodeError:
-                    pass
-            # Fall back to comma-separated
-            return [email.strip().lower() for email in v.split(",") if email.strip()]
-        return [e.lower() for e in v] if isinstance(v, list) else []
 
     # Application
     APP_NAME: str = "AstraVaani"
@@ -119,7 +101,15 @@ class Settings(BaseSettings):
     FROM_EMAIL: str = "onboarding@resend.dev"
 
     # Admin Access (comma-separated list of admin emails)
-    ADMIN_EMAILS: List[str] = []
+    admin_emails_raw: str = Field(default="", validation_alias="ADMIN_EMAILS")
+
+    @computed_field
+    @property
+    def ADMIN_EMAILS(self) -> List[str]:
+        """Parse ADMIN_EMAILS from comma-separated string."""
+        if not self.admin_emails_raw:
+            return []
+        return [email.strip().lower() for email in self.admin_emails_raw.split(",") if email.strip()]
 
 
 settings = Settings()
