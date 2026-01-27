@@ -32,9 +32,20 @@ class Settings(BaseSettings):
 
     @field_validator("ADMIN_EMAILS", mode="before")
     @classmethod
-    def parse_admin_emails(cls, v: Union[str, List[str]]) -> List[str]:
-        """Parse ADMIN_EMAILS from comma-separated string or list."""
+    def parse_admin_emails(cls, v: Union[str, List[str], None]) -> List[str]:
+        """Parse ADMIN_EMAILS from comma-separated string, JSON, or list."""
+        if v is None or v == "":
+            return []
         if isinstance(v, str):
+            # Try JSON first (for ["email1", "email2"] format)
+            if v.startswith("["):
+                try:
+                    parsed = json.loads(v)
+                    if isinstance(parsed, list):
+                        return [e.strip().lower() for e in parsed if e and isinstance(e, str)]
+                except json.JSONDecodeError:
+                    pass
+            # Fall back to comma-separated
             return [email.strip().lower() for email in v.split(",") if email.strip()]
         return [e.lower() for e in v] if isinstance(v, list) else []
 
