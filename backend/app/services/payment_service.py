@@ -180,11 +180,13 @@ class PaymentService:
                 current_period_end=period_end,
             )
             self.db.add(subscription)
+            # Flush to generate subscription.id before using it in ledger entry
+            await self.db.flush()
 
         # Log to credits ledger
         ledger_entry = CreditsLedger(
             user_id=user_id,
-            subscription_id=subscription.id if existing else None,
+            subscription_id=subscription.id,  # Now has valid ID for both new and existing
             credit_type=CreditType.PURCHASE,
             amount=tier_config.questions_monthly or 0,
             balance_after=tier_config.questions_monthly or 0,

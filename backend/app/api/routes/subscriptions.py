@@ -30,13 +30,27 @@ async def get_current_subscription(
 ):
     """Get user's current subscription details."""
     credits_service = CreditsService(db)
+
+    # Get actual subscription from database
+    subscription = await credits_service._get_active_subscription(current_user.id)
     tier_config = await credits_service.get_tier_config(current_user.id)
+
+    # Determine actual status
+    if subscription:
+        actual_status = subscription.status.lower() if subscription.status else "active"
+        period_start = subscription.current_period_start
+        period_end = subscription.current_period_end
+    else:
+        # No subscription = free tier
+        actual_status = "active"  # Free tier is always "active"
+        period_start = None
+        period_end = None
 
     return SubscriptionResponse(
         tier=(tier_config.tier.value if hasattr(tier_config.tier, 'value') else tier_config.tier).lower(),
-        status=SubscriptionStatus.ACTIVE.value.lower(),
-        current_period_start=None,  # TODO: Get from subscription record
-        current_period_end=None,
+        status=actual_status,
+        current_period_start=period_start,
+        current_period_end=period_end,
         price_display=(
             "Free" if tier_config.price_paise == 0
             else f"₹{tier_config.price_paise // 100}/month"
