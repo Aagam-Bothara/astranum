@@ -42,12 +42,10 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError) => {
+        // Don't auto-redirect on 401 - let AuthContext handle it
+        // This prevents redirect loops during token validation on page load
         if (error.response?.status === 401) {
-          // Handle unauthorized - redirect to login
           this.token = null;
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
         }
         return Promise.reject(error);
       }

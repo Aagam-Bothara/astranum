@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { api } from '@/lib/api';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Profile {
   id: string;
@@ -47,11 +48,13 @@ interface UsageStatus {
 
 export default function ChatPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading, hasProfile, user } = useAuth();
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [usage, setUsage] = useState<UsageStatus>({
     tier: 'free',
@@ -117,8 +120,26 @@ export default function ChatPage() {
     }
   };
 
+  // Redirect based on auth state
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated) {
+      router.replace('/login');
+      return;
+    }
+
+    if (!hasProfile) {
+      router.replace('/onboard');
+      return;
+    }
+  }, [authLoading, isAuthenticated, hasProfile, router]);
+
   // Load user data and sessions on mount
   useEffect(() => {
+    if (authLoading || !isAuthenticated || !hasProfile) return;
+    if (initialized) return;
+
     const initializeChat = async () => {
       try {
         const profileResponse = await api.getProfile();
@@ -185,15 +206,11 @@ export default function ChatPage() {
             }
           }
         }
+
+        setInitialized(true);
       } catch (error: any) {
-        // 404 means no profile - redirect to onboarding
-        if (error?.response?.status === 404) {
-          router.push('/onboard');
-          return;
-        }
-        // Other errors (401, network) - redirect to login
-        router.push('/login');
-        return;
+        // Error fetching profile - this shouldn't happen if auth is valid
+        console.error('Error initializing chat:', error);
       }
 
       // Fetch usage
@@ -234,7 +251,7 @@ export default function ChatPage() {
     };
 
     initializeChat();
-  }, [router]);
+  }, [authLoading, isAuthenticated, hasProfile, initialized]);
 
   // Save sessions to localStorage when they change
   useEffect(() => {
@@ -362,6 +379,18 @@ export default function ChatPage() {
       setIsLoading(false);
     }
   };
+
+  // Show loading while auth is being checked
+  if (authLoading || (!isAuthenticated && !initialized)) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mb-4"></div>
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
