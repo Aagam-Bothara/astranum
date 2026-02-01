@@ -99,7 +99,7 @@ export default function CosmosPage() {
         >
           {viewMode === 'transits' ? (
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8">
-              <PlanetaryPositions showTitle size="large" />
+              <PlanetaryPositions showTitle />
             </div>
           ) : (
             <BirthChart />
