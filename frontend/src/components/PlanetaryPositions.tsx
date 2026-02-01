@@ -42,17 +42,20 @@ const ZODIAC_SIGNS = [
   { name: 'Pisces', hindi: 'Meena', symbol: '♓' },
 ];
 
-const PLANET_SYMBOLS: Record<string, { symbol: string; color: string }> = {
-  sun: { symbol: '☉', color: '#FFD700' },
-  moon: { symbol: '☽', color: '#C0C0C0' },
-  mercury: { symbol: '☿', color: '#90EE90' },
-  venus: { symbol: '♀', color: '#FFB6C1' },
-  mars: { symbol: '♂', color: '#FF6347' },
-  jupiter: { symbol: '♃', color: '#FFA500' },
-  saturn: { symbol: '♄', color: '#4169E1' },
-  rahu: { symbol: '☊', color: '#483D8B' },
-  ketu: { symbol: '☋', color: '#8B4513' },
+const PLANET_DATA: Record<string, { name: string; hindi: string; symbol: string; color: string }> = {
+  sun: { name: 'Sun', hindi: 'Surya', symbol: '☉', color: '#FFD700' },
+  moon: { name: 'Moon', hindi: 'Chandra', symbol: '☽', color: '#E8E8E8' },
+  mercury: { name: 'Mercury', hindi: 'Budha', symbol: '☿', color: '#4ADE80' },
+  venus: { name: 'Venus', hindi: 'Shukra', symbol: '♀', color: '#F472B6' },
+  mars: { name: 'Mars', hindi: 'Mangal', symbol: '♂', color: '#EF4444' },
+  jupiter: { name: 'Jupiter', hindi: 'Guru', symbol: '♃', color: '#FB923C' },
+  saturn: { name: 'Saturn', hindi: 'Shani', symbol: '♄', color: '#60A5FA' },
+  rahu: { name: 'Rahu', hindi: 'Rahu', symbol: '☊', color: '#A78BFA' },
+  ketu: { name: 'Ketu', hindi: 'Ketu', symbol: '☋', color: '#F97316' },
 };
+
+// Order planets by their typical distance from sun
+const PLANET_ORDER = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'rahu', 'ketu'];
 
 interface PlanetaryPositionsProps {
   showTitle?: boolean;
@@ -66,20 +69,10 @@ export default function PlanetaryPositions({ showTitle = true, size = 'medium' }
   const [loading, setLoading] = useState(true);
   const [infoLoading, setInfoLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Size configurations
-  const sizeConfig = {
-    small: { svgSize: 300, outerRadius: 130, innerRadius: 80, planetRadius: 55, fontSize: 10 },
-    medium: { svgSize: 400, outerRadius: 175, innerRadius: 110, planetRadius: 75, fontSize: 12 },
-    large: { svgSize: 500, outerRadius: 220, innerRadius: 140, planetRadius: 95, fontSize: 14 },
-  };
-
-  const config = sizeConfig[size];
-  const center = config.svgSize / 2;
+  const [viewMode, setViewMode] = useState<'list' | 'wheel'>('list');
 
   useEffect(() => {
     fetchTransits();
-    // Refresh transits every 5 minutes
     const interval = setInterval(fetchTransits, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
@@ -116,16 +109,6 @@ export default function PlanetaryPositions({ showTitle = true, size = 'medium' }
     }
   };
 
-  // Calculate position on the wheel from longitude
-  const getPosition = (longitude: number, radius: number) => {
-    // Adjust angle: 0 degrees (Aries) should be at the top, going clockwise
-    const angle = ((longitude - 90) * Math.PI) / 180;
-    return {
-      x: center + radius * Math.cos(angle),
-      y: center + radius * Math.sin(angle),
-    };
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -151,165 +134,72 @@ export default function PlanetaryPositions({ showTitle = true, size = 'medium' }
   return (
     <div className="relative">
       {showTitle && (
-        <h3 className="text-lg font-semibold text-center mb-4">
-          Current Planetary Positions
-          <span className="block text-sm font-normal text-gray-500 dark:text-gray-400">
+        <div className="text-center mb-6">
+          <h3 className="text-xl font-bold mb-1">Current Planetary Positions</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {transits?.date ? new Date(transits.date).toLocaleDateString('en-IN', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
               day: 'numeric',
             }) : ''}
-          </span>
-        </h3>
+          </p>
+        </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-6 items-center justify-center">
-        {/* Zodiac Wheel */}
-        <div className="relative">
-          <svg
-            width={config.svgSize}
-            height={config.svgSize}
-            className="drop-shadow-lg"
+      {/* View Toggle */}
+      <div className="flex justify-center mb-6">
+        <div className="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
+          <button
+            onClick={() => setViewMode('list')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              viewMode === 'list'
+                ? 'bg-white dark:bg-gray-700 shadow text-primary-600 dark:text-primary-400'
+                : 'text-gray-600 dark:text-gray-400'
+            }`}
           >
-            {/* Background */}
-            <circle
-              cx={center}
-              cy={center}
-              r={config.outerRadius}
-              fill="url(#wheelGradient)"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-gray-200 dark:text-gray-700"
+            List View
+          </button>
+          <button
+            onClick={() => setViewMode('wheel')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              viewMode === 'wheel'
+                ? 'bg-white dark:bg-gray-700 shadow text-primary-600 dark:text-primary-400'
+                : 'text-gray-600 dark:text-gray-400'
+            }`}
+          >
+            Wheel View
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Main Content */}
+        <div className="flex-1">
+          {viewMode === 'list' ? (
+            <PlanetList
+              transits={transits}
+              selectedPlanet={selectedPlanet}
+              onPlanetClick={handlePlanetClick}
             />
-
-            {/* Gradient definition */}
-            <defs>
-              <radialGradient id="wheelGradient" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="rgba(99, 102, 241, 0.1)" />
-                <stop offset="100%" stopColor="rgba(139, 92, 246, 0.05)" />
-              </radialGradient>
-            </defs>
-
-            {/* Zodiac sign divisions */}
-            {ZODIAC_SIGNS.map((sign, index) => {
-              const startAngle = index * 30 - 90;
-              const midAngle = startAngle + 15;
-              const labelPos = getPosition(index * 30 + 15, config.outerRadius - 25);
-
-              return (
-                <g key={sign.name}>
-                  {/* Division line */}
-                  <line
-                    x1={center + config.innerRadius * Math.cos((startAngle * Math.PI) / 180)}
-                    y1={center + config.innerRadius * Math.sin((startAngle * Math.PI) / 180)}
-                    x2={center + config.outerRadius * Math.cos((startAngle * Math.PI) / 180)}
-                    y2={center + config.outerRadius * Math.sin((startAngle * Math.PI) / 180)}
-                    stroke="currentColor"
-                    strokeWidth="1"
-                    className="text-gray-300 dark:text-gray-600"
-                  />
-                  {/* Sign symbol */}
-                  <text
-                    x={labelPos.x}
-                    y={labelPos.y}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className="fill-gray-600 dark:fill-gray-400"
-                    fontSize={config.fontSize + 2}
-                  >
-                    {sign.symbol}
-                  </text>
-                </g>
-              );
-            })}
-
-            {/* Inner circle */}
-            <circle
-              cx={center}
-              cy={center}
-              r={config.innerRadius}
-              fill="white"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="dark:fill-gray-900 text-gray-200 dark:text-gray-700"
+          ) : (
+            <PlanetWheel
+              transits={transits}
+              selectedPlanet={selectedPlanet}
+              onPlanetClick={handlePlanetClick}
+              size={size}
             />
-
-            {/* Planet positions */}
-            {transits?.planets && Object.entries(transits.planets).map(([name, pos], index) => {
-              const planetSymbol = PLANET_SYMBOLS[name];
-              if (!planetSymbol) return null;
-
-              // Adjust radius to spread planets and avoid overlap
-              const radius = config.planetRadius + (index % 3) * 15;
-              const position = getPosition(pos.absolute_longitude, radius);
-
-              return (
-                <g
-                  key={name}
-                  className="cursor-pointer transition-transform hover:scale-110"
-                  onClick={() => handlePlanetClick(name)}
-                >
-                  {/* Planet circle background */}
-                  <circle
-                    cx={position.x}
-                    cy={position.y}
-                    r={size === 'small' ? 12 : 15}
-                    fill={selectedPlanet === name ? planetSymbol.color : 'white'}
-                    className={selectedPlanet !== name ? 'dark:fill-gray-800' : ''}
-                    stroke={planetSymbol.color}
-                    strokeWidth="2"
-                  />
-                  {/* Planet symbol */}
-                  <text
-                    x={position.x}
-                    y={position.y}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize={size === 'small' ? 12 : 14}
-                    fill={selectedPlanet === name ? 'white' : planetSymbol.color}
-                    fontWeight="bold"
-                  >
-                    {planetSymbol.symbol}
-                  </text>
-                  {/* Retrograde indicator */}
-                  {pos.is_retrograde && (
-                    <text
-                      x={position.x + (size === 'small' ? 10 : 12)}
-                      y={position.y - (size === 'small' ? 8 : 10)}
-                      fontSize={size === 'small' ? 8 : 10}
-                      fill="#FF4444"
-                      fontWeight="bold"
-                    >
-                      R
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-
-            {/* Center label */}
-            <text
-              x={center}
-              y={center}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              className="fill-gray-400 dark:fill-gray-500"
-              fontSize={config.fontSize - 2}
-            >
-              Click a planet
-            </text>
-          </svg>
+          )}
         </div>
 
         {/* Planet Info Panel */}
         <AnimatePresence>
-          {(selectedPlanet || planetInfo) && (
+          {selectedPlanet && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="w-full lg:w-72 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
+              className="w-full lg:w-80 p-5 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
             >
               {infoLoading ? (
                 <div className="flex items-center justify-center py-8">
@@ -317,15 +207,15 @@ export default function PlanetaryPositions({ showTitle = true, size = 'medium' }
                 </div>
               ) : planetInfo ? (
                 <>
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-4 mb-4">
                     <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-2xl"
-                      style={{ backgroundColor: PLANET_SYMBOLS[selectedPlanet!]?.color + '20' }}
+                      className="w-14 h-14 rounded-full flex items-center justify-center text-3xl"
+                      style={{ backgroundColor: PLANET_DATA[selectedPlanet]?.color + '25', color: PLANET_DATA[selectedPlanet]?.color }}
                     >
                       {planetInfo.symbol}
                     </div>
                     <div>
-                      <h4 className="font-bold text-lg">{planetInfo.name}</h4>
+                      <h4 className="font-bold text-xl">{planetInfo.name}</h4>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         {planetInfo.name_hindi}
                       </p>
@@ -333,27 +223,36 @@ export default function PlanetaryPositions({ showTitle = true, size = 'medium' }
                   </div>
 
                   {planetInfo.current_position && (
-                    <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <p className="text-sm font-medium mb-1">Current Position</p>
-                      <p className="text-lg font-semibold">
-                        {planetInfo.current_position.sign} ({planetInfo.current_position.sign_hindi})
+                    <div className="mb-4 p-4 bg-gradient-to-r from-primary-50 to-cosmic-50 dark:from-primary-900/20 dark:to-cosmic-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
+                      <p className="text-xs font-medium text-primary-600 dark:text-primary-400 mb-1">Current Position</p>
+                      <p className="text-xl font-bold">
+                        {planetInfo.current_position.sign}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        {planetInfo.current_position.degree.toFixed(2)}°
-                        {planetInfo.current_position.is_retrograde && (
-                          <span className="ml-2 text-red-500 font-medium">Retrograde</span>
-                        )}
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {planetInfo.current_position.sign_hindi} • {planetInfo.current_position.degree.toFixed(2)}°
                       </p>
+                      {planetInfo.current_position.is_retrograde && (
+                        <span className="inline-block mt-2 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium rounded">
+                          Retrograde
+                        </span>
+                      )}
                     </div>
                   )}
 
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
                     {planetInfo.description}
                   </p>
 
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
                     Orbital Period: {planetInfo.orbital_period}
                   </p>
+
+                  <button
+                    onClick={() => { setSelectedPlanet(null); setPlanetInfo(null); }}
+                    className="mt-4 w-full py-2 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    Close
+                  </button>
                 </>
               ) : (
                 <p className="text-center text-gray-500 py-4">Select a planet to view details</p>
@@ -362,28 +261,314 @@ export default function PlanetaryPositions({ showTitle = true, size = 'medium' }
           )}
         </AnimatePresence>
       </div>
+    </div>
+  );
+}
 
-      {/* Planet Legend */}
-      <div className="mt-6 flex flex-wrap justify-center gap-3">
-        {Object.entries(PLANET_SYMBOLS).map(([name, { symbol, color }]) => (
-          <button
-            key={name}
-            onClick={() => handlePlanetClick(name)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all ${
-              selectedPlanet === name
-                ? 'bg-gray-100 dark:bg-gray-700 ring-2 ring-primary-500'
-                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-            }`}
-            style={selectedPlanet === name ? { '--tw-ring-color': color } as React.CSSProperties : undefined}
+function PlanetList({
+  transits,
+  selectedPlanet,
+  onPlanetClick
+}: {
+  transits: TransitData | null;
+  selectedPlanet: string | null;
+  onPlanetClick: (name: string) => void;
+}) {
+  if (!transits) return null;
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {PLANET_ORDER.map((planetKey) => {
+        const planet = PLANET_DATA[planetKey];
+        const position = transits.planets[planetKey];
+        if (!planet || !position) return null;
+
+        const signData = ZODIAC_SIGNS.find(s => s.name === position.sign);
+
+        return (
+          <motion.button
+            key={planetKey}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => onPlanetClick(planetKey)}
+            className={`p-4 rounded-xl text-left transition-all border-2 ${
+              selectedPlanet === planetKey
+                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                : 'border-transparent bg-white dark:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
+            } shadow-sm hover:shadow-md`}
           >
-            <span style={{ color }}>{symbol}</span>
-            <span className="capitalize text-gray-700 dark:text-gray-300">{name}</span>
-            {transits?.planets[name]?.is_retrograde && (
-              <span className="text-xs text-red-500 font-medium">R</span>
-            )}
-          </button>
-        ))}
-      </div>
+            <div className="flex items-center gap-3">
+              {/* Planet Symbol */}
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold"
+                style={{
+                  backgroundColor: planet.color + '20',
+                  color: planet.color,
+                }}
+              >
+                {planet.symbol}
+              </div>
+
+              {/* Planet Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {planet.name}
+                  </span>
+                  {position.is_retrograde && (
+                    <span className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded">
+                      R
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {planet.hindi}
+                </div>
+              </div>
+
+              {/* Sign */}
+              <div className="text-right">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xl">{signData?.symbol}</span>
+                  <span className="font-medium text-gray-800 dark:text-gray-200">
+                    {position.sign}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-400">
+                  {position.degree.toFixed(1)}°
+                </div>
+              </div>
+            </div>
+          </motion.button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PlanetWheel({
+  transits,
+  selectedPlanet,
+  onPlanetClick,
+  size = 'medium'
+}: {
+  transits: TransitData | null;
+  selectedPlanet: string | null;
+  onPlanetClick: (name: string) => void;
+  size: 'small' | 'medium' | 'large';
+}) {
+  const sizeConfig = {
+    small: { svgSize: 350, outerRadius: 155, innerRadius: 95, fontSize: 14 },
+    medium: { svgSize: 450, outerRadius: 200, innerRadius: 125, fontSize: 16 },
+    large: { svgSize: 550, outerRadius: 245, innerRadius: 155, fontSize: 18 },
+  };
+
+  const config = sizeConfig[size];
+  const center = config.svgSize / 2;
+
+  // Calculate position on the wheel from longitude
+  const getPosition = (longitude: number, radius: number) => {
+    const angle = ((longitude - 90) * Math.PI) / 180;
+    return {
+      x: center + radius * Math.cos(angle),
+      y: center + radius * Math.sin(angle),
+    };
+  };
+
+  // Group planets by sign to handle overlaps
+  const planetsBySign: Record<string, Array<{ name: string; pos: PlanetPosition }>> = {};
+  if (transits) {
+    Object.entries(transits.planets).forEach(([name, pos]) => {
+      const signIndex = Math.floor(pos.absolute_longitude / 30);
+      if (!planetsBySign[signIndex]) {
+        planetsBySign[signIndex] = [];
+      }
+      planetsBySign[signIndex].push({ name, pos });
+    });
+  }
+
+  // Calculate adjusted positions to avoid overlap
+  const getAdjustedPlanetPositions = () => {
+    const positions: Array<{ name: string; x: number; y: number; pos: PlanetPosition }> = [];
+
+    Object.values(planetsBySign).forEach((planetsInSign) => {
+      planetsInSign.forEach((planet, idx) => {
+        // Vary the radius based on position in group
+        const baseRadius = (config.outerRadius + config.innerRadius) / 2;
+        const radiusOffset = (idx - (planetsInSign.length - 1) / 2) * 25;
+        const radius = baseRadius + radiusOffset;
+
+        const { x, y } = getPosition(planet.pos.absolute_longitude, radius);
+        positions.push({ name: planet.name, x, y, pos: planet.pos });
+      });
+    });
+
+    return positions;
+  };
+
+  const planetPositions = getAdjustedPlanetPositions();
+
+  return (
+    <div className="flex justify-center">
+      <svg
+        width={config.svgSize}
+        height={config.svgSize}
+        className="drop-shadow-xl"
+      >
+        {/* Definitions */}
+        <defs>
+          <radialGradient id="wheelBg" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(99, 102, 241, 0.08)" />
+            <stop offset="100%" stopColor="rgba(139, 92, 246, 0.03)" />
+          </radialGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Outer ring background */}
+        <circle
+          cx={center}
+          cy={center}
+          r={config.outerRadius}
+          fill="url(#wheelBg)"
+          stroke="currentColor"
+          strokeWidth="2"
+          className="text-gray-300 dark:text-gray-600"
+        />
+
+        {/* Zodiac segments */}
+        {ZODIAC_SIGNS.map((sign, index) => {
+          const startAngle = index * 30 - 90;
+          const labelPos = getPosition(index * 30 + 15, config.outerRadius - 30);
+
+          return (
+            <g key={sign.name}>
+              {/* Division line */}
+              <line
+                x1={center + config.innerRadius * Math.cos((startAngle * Math.PI) / 180)}
+                y1={center + config.innerRadius * Math.sin((startAngle * Math.PI) / 180)}
+                x2={center + config.outerRadius * Math.cos((startAngle * Math.PI) / 180)}
+                y2={center + config.outerRadius * Math.sin((startAngle * Math.PI) / 180)}
+                stroke="currentColor"
+                strokeWidth="1"
+                className="text-gray-300 dark:text-gray-600"
+              />
+              {/* Sign symbol */}
+              <text
+                x={labelPos.x}
+                y={labelPos.y}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="fill-gray-500 dark:fill-gray-400"
+                fontSize={config.fontSize}
+                fontWeight="500"
+              >
+                {sign.symbol}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Inner circle */}
+        <circle
+          cx={center}
+          cy={center}
+          r={config.innerRadius}
+          className="fill-white dark:fill-gray-900"
+          stroke="currentColor"
+          strokeWidth="2"
+          style={{ stroke: 'rgba(156, 163, 175, 0.3)' }}
+        />
+
+        {/* Planet positions */}
+        {planetPositions.map(({ name, x, y, pos }) => {
+          const planet = PLANET_DATA[name];
+          if (!planet) return null;
+
+          const isSelected = selectedPlanet === name;
+
+          return (
+            <g
+              key={name}
+              className="cursor-pointer"
+              onClick={() => onPlanetClick(name)}
+              filter={isSelected ? 'url(#glow)' : undefined}
+            >
+              {/* Planet circle */}
+              <circle
+                cx={x}
+                cy={y}
+                r={isSelected ? 22 : 18}
+                fill={isSelected ? planet.color : 'white'}
+                stroke={planet.color}
+                strokeWidth={isSelected ? 3 : 2}
+                className={!isSelected ? 'dark:fill-gray-800' : ''}
+              />
+              {/* Planet symbol */}
+              <text
+                x={x}
+                y={y}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize={isSelected ? 18 : 16}
+                fill={isSelected ? 'white' : planet.color}
+                fontWeight="bold"
+              >
+                {planet.symbol}
+              </text>
+              {/* Retrograde indicator */}
+              {pos.is_retrograde && (
+                <g>
+                  <circle
+                    cx={x + 14}
+                    cy={y - 14}
+                    r={8}
+                    fill="#EF4444"
+                  />
+                  <text
+                    x={x + 14}
+                    y={y - 14}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={10}
+                    fill="white"
+                    fontWeight="bold"
+                  >
+                    R
+                  </text>
+                </g>
+              )}
+            </g>
+          );
+        })}
+
+        {/* Center text */}
+        <text
+          x={center}
+          y={center - 10}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="fill-gray-400 dark:fill-gray-500"
+          fontSize={12}
+        >
+          Vedic Zodiac
+        </text>
+        <text
+          x={center}
+          y={center + 10}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="fill-gray-300 dark:fill-gray-600"
+          fontSize={10}
+        >
+          Click any planet
+        </text>
+      </svg>
     </div>
   );
 }
