@@ -138,6 +138,27 @@ export default function CosmosPage() {
             </p>
           </div>
         </div>
+
+        {/* Navigation to Vedic Features */}
+        <div className="mt-12 text-center">
+          <p className="text-gray-500 dark:text-gray-400 mb-4">Explore advanced Vedic features</p>
+          <div className="flex justify-center gap-4 flex-wrap">
+            <Link
+              href="/vedic"
+              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl shadow hover:shadow-lg transition-all flex items-center gap-2"
+            >
+              <span>☽</span>
+              Dasha & Yogas
+            </Link>
+            <Link
+              href="/chat"
+              className="px-6 py-3 bg-white dark:bg-gray-800 rounded-xl shadow hover:shadow-lg transition-all flex items-center gap-2 text-gray-700 dark:text-gray-300"
+            >
+              <span>💬</span>
+              Ask Questions
+            </Link>
+          </div>
+        </div>
       </div>
     </main>
   );

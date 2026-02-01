@@ -186,6 +186,21 @@ class ApiClient {
     return { data: response.data };
   }
 
+  // Vedic Astrology endpoints
+  async getDashaPeriods(profileId?: string, years: number = 80): Promise<ApiResponse<any>> {
+    const response = await this.client.get('/charts/dasha', {
+      params: { profile_id: profileId, years },
+    });
+    return { data: response.data };
+  }
+
+  async getYogas(profileId?: string): Promise<ApiResponse<any>> {
+    const response = await this.client.get('/charts/yogas', {
+      params: profileId ? { profile_id: profileId } : {},
+    });
+    return { data: response.data };
+  }
+
   // Subscription endpoints
   async getCurrentSubscription(): Promise<ApiResponse<Subscription>> {
     const response = await this.client.get('/subscriptions/current');
