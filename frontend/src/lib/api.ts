@@ -42,10 +42,10 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError) => {
-        // Don't auto-redirect on 401 - let AuthContext handle it
-        // This prevents redirect loops during token validation on page load
+        // On 401, clear token from both memory and storage to maintain consistent state
+        // Let AuthContext handle the redirect logic
         if (error.response?.status === 401) {
-          this.token = null;
+          this.clearToken();
         }
         return Promise.reject(error);
       }
@@ -69,6 +69,39 @@ class ApiClient {
     this.token = null;
     if (typeof window !== 'undefined') {
       localStorage.removeItem('astravaani_token');
+    }
+  }
+
+  /**
+   * Check if the current token is valid and not expired.
+   * Returns true if token exists and is not expired.
+   */
+  isTokenValid(): boolean {
+    if (!this.token) {
+      this.loadToken();
+    }
+    if (!this.token) {
+      return false;
+    }
+
+    try {
+      // Decode JWT payload (base64)
+      const parts = this.token.split('.');
+      if (parts.length !== 3) {
+        return false;
+      }
+      const payload = JSON.parse(atob(parts[1]));
+      const exp = payload.exp;
+
+      if (!exp) {
+        return false;
+      }
+
+      // Check if token is expired (with 60 second buffer)
+      const now = Math.floor(Date.now() / 1000);
+      return exp > now + 60;
+    } catch {
+      return false;
     }
   }
 

@@ -43,6 +43,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Proactively check if token is expired before making API calls
+      if (!api.isTokenValid()) {
+        api.clearToken();
+        setState({
+          isAuthenticated: false,
+          isLoading: false,
+          user: null,
+          hasProfile: false,
+        });
+        return;
+      }
+
       // Fetch user profile
       const profileResponse = await api.getProfile();
       const userData = profileResponse.data as any;
