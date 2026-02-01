@@ -7,6 +7,7 @@ import PlanetaryPositions from '@/components/PlanetaryPositions';
 import BirthChart from '@/components/BirthChart';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
+import { MobileNav } from '@/components/MobileNav';
 
 type ViewMode = 'transits' | 'chart';
 
@@ -15,7 +16,8 @@ export default function CosmosPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('transits');
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-cosmic-900/10 via-transparent to-primary-900/10">
+    <>
+    <main className="min-h-screen bg-gradient-to-b from-cosmic-900/10 via-transparent to-primary-900/10 pb-20 md:pb-0">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -161,5 +163,7 @@ export default function CosmosPage() {
         </div>
       </div>
     </main>
+    <MobileNav />
+    </>
   );
 }

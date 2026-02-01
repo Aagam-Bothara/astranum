@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { MobileNav } from '@/components/MobileNav';
 
 interface Profile {
   id: string;
@@ -165,7 +166,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen py-12 px-4">
+    <>
+    <main className="min-h-screen py-12 px-4 pb-24 md:pb-12">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -416,5 +418,7 @@ export default function ProfilePage() {
         )}
       </div>
     </main>
+    <MobileNav />
+    </>
   );
 }

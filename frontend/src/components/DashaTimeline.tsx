@@ -97,42 +97,42 @@ export function DashaTimeline() {
   const remainingMonths = Math.floor((current_dasha.mahadasha_remaining_days % 365) / 30);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Current Dasha Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-purple-500/10 to-indigo-500/10 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-2xl p-6 border border-purple-200 dark:border-purple-800"
+        className="bg-gradient-to-br from-purple-500/10 to-indigo-500/10 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-2xl p-4 md:p-6 border border-purple-200 dark:border-purple-800"
       >
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <span className="text-2xl">{PLANET_ICONS[current_dasha.mahadasha]}</span>
+        <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4 flex items-center gap-2">
+          <span className="text-xl md:text-2xl">{PLANET_ICONS[current_dasha.mahadasha]}</span>
           Current Planetary Period
         </h3>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {/* Mahadasha */}
-          <div className="space-y-3">
+          <div className="space-y-2 md:space-y-3">
             <div className="flex items-center gap-3">
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg"
+                className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-xl md:text-2xl shadow-lg flex-shrink-0"
                 style={{ backgroundColor: PLANET_COLORS[current_dasha.mahadasha] + '30' }}
               >
                 {PLANET_ICONS[current_dasha.mahadasha]}
               </div>
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Mahadasha</p>
-                <p className="text-xl font-bold" style={{ color: PLANET_COLORS[current_dasha.mahadasha] }}>
+                <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Mahadasha</p>
+                <p className="text-lg md:text-xl font-bold" style={{ color: PLANET_COLORS[current_dasha.mahadasha] }}>
                   {current_dasha.mahadasha}
                 </p>
               </div>
             </div>
-            <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-2.5 md:p-3">
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
                 Remaining: <span className="font-semibold text-gray-900 dark:text-white">
-                  {remainingYears} years, {remainingMonths} months
+                  {remainingYears}y {remainingMonths}m
                 </span>
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-[10px] md:text-xs text-gray-500 mt-1">
                 {new Date(current_dasha.mahadasha_start).toLocaleDateString()} - {new Date(current_dasha.mahadasha_end).toLocaleDateString()}
               </p>
             </div>
@@ -140,23 +140,23 @@ export function DashaTimeline() {
 
           {/* Antardasha */}
           {current_dasha.antardasha && (
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-3">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg"
+                  className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-xl md:text-2xl shadow-lg flex-shrink-0"
                   style={{ backgroundColor: PLANET_COLORS[current_dasha.antardasha] + '30' }}
                 >
                   {PLANET_ICONS[current_dasha.antardasha]}
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Antardasha (Sub-period)</p>
-                  <p className="text-xl font-bold" style={{ color: PLANET_COLORS[current_dasha.antardasha] }}>
+                  <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Antardasha</p>
+                  <p className="text-lg md:text-xl font-bold" style={{ color: PLANET_COLORS[current_dasha.antardasha] }}>
                     {current_dasha.antardasha}
                   </p>
                 </div>
               </div>
-              <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-2.5 md:p-3">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
                   Remaining: <span className="font-semibold text-gray-900 dark:text-white">
                     {current_dasha.antardasha_remaining_days} days
                   </span>
@@ -168,12 +168,12 @@ export function DashaTimeline() {
       </motion.div>
 
       {/* Dasha Timeline */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 md:p-6 shadow-lg">
+        <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">
           Dasha Timeline
         </h3>
 
-        <div className="space-y-3">
+        <div className="space-y-2 md:space-y-3">
           {dasha_periods.map((period, index) => {
             const isCurrentPeriod = period.planet === current_dasha.mahadasha;
             const isPast = new Date(period.end_date) < new Date();
@@ -188,7 +188,7 @@ export function DashaTimeline() {
               >
                 <button
                   onClick={() => setExpandedPeriod(isExpanded ? null : index)}
-                  className={`w-full text-left rounded-xl p-4 transition-all ${
+                  className={`w-full text-left rounded-xl p-3 md:p-4 transition-all active:scale-[0.99] ${
                     isCurrentPeriod
                       ? 'bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900/40 dark:to-indigo-900/40 ring-2 ring-purple-500'
                       : isPast
@@ -196,35 +196,35 @@ export function DashaTimeline() {
                       : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0">
                       <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
+                        className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-lg md:text-xl flex-shrink-0"
                         style={{ backgroundColor: PLANET_COLORS[period.planet] + '30' }}
                       >
                         {PLANET_ICONS[period.planet]}
                       </div>
-                      <div>
-                        <p className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                          {period.planet} Mahadasha
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm md:text-base text-gray-900 dark:text-white flex items-center gap-1.5 md:gap-2 flex-wrap">
+                          <span className="truncate">{period.planet}</span>
                           {isCurrentPeriod && (
-                            <span className="text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full">
+                            <span className="text-[10px] md:text-xs bg-purple-500 text-white px-1.5 md:px-2 py-0.5 rounded-full flex-shrink-0">
                               Current
                             </span>
                           )}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(period.start_date).toLocaleDateString()} - {new Date(period.end_date).toLocaleDateString()}
+                        <p className="text-[10px] md:text-sm text-gray-500 dark:text-gray-400 truncate">
+                          {new Date(period.start_date).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })} - {new Date(period.end_date).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-700 dark:text-gray-300">
-                        {period.duration_years.toFixed(1)} years
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-medium text-xs md:text-sm text-gray-700 dark:text-gray-300">
+                        {period.duration_years.toFixed(1)}y
                       </p>
                       {period.sub_periods && period.sub_periods.length > 0 && (
-                        <p className="text-xs text-gray-500">
-                          {isExpanded ? '▼' : '▶'} {period.sub_periods.length} sub-periods
+                        <p className="text-[10px] md:text-xs text-gray-500">
+                          {isExpanded ? '▼' : '▶'} {period.sub_periods.length}
                         </p>
                       )}
                     </div>
@@ -237,23 +237,23 @@ export function DashaTimeline() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="ml-6 mt-2 space-y-2 border-l-2 border-gray-200 dark:border-gray-600 pl-4"
+                    className="ml-4 md:ml-6 mt-2 space-y-1.5 md:space-y-2 border-l-2 border-gray-200 dark:border-gray-600 pl-3 md:pl-4"
                   >
                     {period.sub_periods.map((sub, subIndex) => (
                       <div
                         key={subIndex}
-                        className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/30 rounded-lg"
+                        className="flex items-center justify-between p-1.5 md:p-2 bg-gray-50 dark:bg-gray-700/30 rounded-lg"
                       >
-                        <div className="flex items-center gap-2">
-                          <span style={{ color: PLANET_COLORS[sub.planet] }}>
+                        <div className="flex items-center gap-1.5 md:gap-2">
+                          <span className="text-sm md:text-base" style={{ color: PLANET_COLORS[sub.planet] }}>
                             {PLANET_ICONS[sub.planet]}
                           </span>
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                          <span className="text-xs md:text-sm text-gray-700 dark:text-gray-300">
                             {sub.planet}
                           </span>
                         </div>
-                        <div className="text-right text-xs text-gray-500">
-                          <p>{new Date(sub.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
+                        <div className="text-right text-[10px] md:text-xs text-gray-500">
+                          <p>{new Date(sub.start_date).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</p>
                           <p>{sub.duration_years.toFixed(1)}y</p>
                         </div>
                       </div>
@@ -267,7 +267,7 @@ export function DashaTimeline() {
       </div>
 
       {/* Moon Info */}
-      <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+      <div className="text-center text-xs md:text-sm text-gray-500 dark:text-gray-400 px-4">
         Based on Moon in <span className="font-medium">{data.moon_nakshatra}</span> nakshatra ({data.moon_sign})
       </div>
     </div>

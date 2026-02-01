@@ -88,45 +88,45 @@ export function YogasDisplay() {
   const yogaTypes = Array.from(new Set(data.yogas.map(y => y.yoga_type)));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Summary Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-2xl p-6 border border-indigo-200 dark:border-indigo-800"
+        className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-2xl p-4 md:p-6 border border-indigo-200 dark:border-indigo-800"
       >
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
               Yoga Combinations
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">
               Ascendant: <span className="font-medium">{data.ascendant}</span>
             </p>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+            <div className="text-2xl md:text-3xl font-bold text-indigo-600 dark:text-indigo-400">
               {data.total_yogas}
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
               {data.benefic_yogas} benefic
             </p>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mt-4">
+        <div className="flex flex-wrap gap-2 md:gap-4 mt-4 justify-center">
           {yogaTypes.map(type => {
             const count = data.yogas.filter(y => y.yoga_type === type).length;
             const colors = YOGA_TYPE_COLORS[type] || YOGA_TYPE_COLORS.raja;
             return (
               <div
                 key={type}
-                className={`${colors.bg} ${colors.border} border rounded-lg p-3 text-center`}
+                className={`${colors.bg} ${colors.border} border rounded-lg p-2 md:p-3 text-center flex-1 min-w-[80px] max-w-[120px]`}
               >
-                <div className="text-2xl">{YOGA_TYPE_ICONS[type] || '✨'}</div>
-                <div className={`font-semibold ${colors.text}`}>{count}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">{type}</div>
+                <div className="text-lg md:text-2xl">{YOGA_TYPE_ICONS[type] || '✨'}</div>
+                <div className={`font-semibold text-sm md:text-base ${colors.text}`}>{count}</div>
+                <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 capitalize truncate">{type}</div>
               </div>
             );
           })}
@@ -134,22 +134,22 @@ export function YogasDisplay() {
       </motion.div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+          className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
             filter === 'all'
               ? 'bg-indigo-500 text-white'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
-          All Yogas ({data.total_yogas})
+          All ({data.total_yogas})
         </button>
         {yogaTypes.map(type => (
           <button
             key={type}
             onClick={() => setFilter(type)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap capitalize ${
+            className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all whitespace-nowrap capitalize ${
               filter === type
                 ? 'bg-indigo-500 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -161,7 +161,7 @@ export function YogasDisplay() {
       </div>
 
       {/* Yoga Cards */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
         <AnimatePresence mode="popLayout">
           {filteredYogas.map((yoga, index) => {
             const colors = YOGA_TYPE_COLORS[yoga.yoga_type] || YOGA_TYPE_COLORS.raja;
@@ -176,41 +176,44 @@ export function YogasDisplay() {
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ delay: index * 0.05 }}
                 onClick={() => setSelectedYoga(yoga)}
-                className={`${colors.bg} ${colors.border} border rounded-xl p-4 cursor-pointer hover:shadow-lg transition-all`}
+                className={`${colors.bg} ${colors.border} border rounded-xl p-3 md:p-4 cursor-pointer hover:shadow-lg transition-all active:scale-[0.98]`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">{YOGA_TYPE_ICONS[yoga.yoga_type] || '✨'}</div>
-                    <div>
-                      <h4 className={`font-semibold ${colors.text}`}>{yoga.name}</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                    <div className="text-xl md:text-2xl flex-shrink-0">{YOGA_TYPE_ICONS[yoga.yoga_type] || '✨'}</div>
+                    <div className="min-w-0">
+                      <h4 className={`font-semibold text-sm md:text-base ${colors.text} truncate`}>{yoga.name}</h4>
+                      <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 italic truncate">
                         {yoga.name_sanskrit}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     {yoga.is_benefic && (
-                      <span className="text-green-500 text-lg" title="Benefic">✓</span>
+                      <span className="text-green-500 text-base md:text-lg" title="Benefic">✓</span>
                     )}
-                    <span className={`${strength.color} text-white text-xs px-2 py-0.5 rounded-full`}>
+                    <span className={`${strength.color} text-white text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full`}>
                       {strength.label}
                     </span>
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 line-clamp-2">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-2 md:mt-3 line-clamp-2">
                   {yoga.description}
                 </p>
 
-                <div className="flex flex-wrap gap-1 mt-3">
-                  {yoga.planets_involved.map(planet => (
+                <div className="flex flex-wrap gap-1 mt-2 md:mt-3">
+                  {yoga.planets_involved.slice(0, 4).map(planet => (
                     <span
                       key={planet}
-                      className="text-xs bg-white/50 dark:bg-gray-800/50 px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-400"
+                      className="text-[10px] md:text-xs bg-white/50 dark:bg-gray-800/50 px-1.5 md:px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-400"
                     >
                       {planet}
                     </span>
                   ))}
+                  {yoga.planets_involved.length > 4 && (
+                    <span className="text-[10px] md:text-xs text-gray-500">+{yoga.planets_involved.length - 4}</span>
+                  )}
                 </div>
               </motion.div>
             );
@@ -231,29 +234,32 @@ export function YogasDisplay() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 p-0 md:p-4"
             onClick={() => setSelectedYoga(null)}
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
+              initial={{ scale: 0.95, y: 100 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
+              exit={{ scale: 0.95, y: 100 }}
               onClick={e => e.stopPropagation()}
-              className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto"
+              className="bg-white dark:bg-gray-800 rounded-t-2xl md:rounded-2xl p-4 md:p-6 max-w-lg w-full max-h-[85vh] md:max-h-[80vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="text-3xl">{YOGA_TYPE_ICONS[selectedYoga.yoga_type] || '✨'}</div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+              {/* Mobile drag handle */}
+              <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-4 md:hidden" />
+
+              <div className="flex items-start justify-between mb-4 gap-2">
+                <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                  <div className="text-2xl md:text-3xl flex-shrink-0">{YOGA_TYPE_ICONS[selectedYoga.yoga_type] || '✨'}</div>
+                  <div className="min-w-0">
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white truncate">
                       {selectedYoga.name}
                     </h3>
-                    <p className="text-sm text-gray-500 italic">{selectedYoga.name_sanskrit}</p>
+                    <p className="text-xs md:text-sm text-gray-500 italic truncate">{selectedYoga.name_sanskrit}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setSelectedYoga(null)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full flex-shrink-0"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -263,21 +269,21 @@ export function YogasDisplay() {
 
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Formation</h4>
-                  <p className="text-gray-700 dark:text-gray-300">{selectedYoga.description}</p>
+                  <h4 className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Formation</h4>
+                  <p className="text-sm md:text-base text-gray-700 dark:text-gray-300">{selectedYoga.description}</p>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Effects</h4>
-                  <p className="text-gray-700 dark:text-gray-300">{selectedYoga.effects}</p>
+                  <h4 className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Effects</h4>
+                  <p className="text-sm md:text-base text-gray-700 dark:text-gray-300">{selectedYoga.effects}</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 md:gap-4">
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Planets</h4>
+                    <h4 className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Planets</h4>
                     <div className="flex flex-wrap gap-1">
                       {selectedYoga.planets_involved.map(planet => (
-                        <span key={planet} className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-sm">
+                        <span key={planet} className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 md:py-1 rounded text-xs md:text-sm">
                           {planet}
                         </span>
                       ))}
@@ -285,10 +291,10 @@ export function YogasDisplay() {
                   </div>
                   {selectedYoga.houses_involved.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Houses</h4>
+                      <h4 className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Houses</h4>
                       <div className="flex flex-wrap gap-1">
                         {selectedYoga.houses_involved.map(house => (
-                          <span key={house} className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded text-sm">
+                          <span key={house} className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 md:py-1 rounded text-xs md:text-sm">
                             {house}
                           </span>
                         ))}
@@ -297,12 +303,12 @@ export function YogasDisplay() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-4 pt-2">
-                  <span className={`${STRENGTH_BADGES[selectedYoga.strength]?.color || 'bg-gray-400'} text-white px-3 py-1 rounded-full text-sm`}>
+                <div className="flex flex-wrap items-center gap-2 md:gap-4 pt-2">
+                  <span className={`${STRENGTH_BADGES[selectedYoga.strength]?.color || 'bg-gray-400'} text-white px-2.5 md:px-3 py-0.5 md:py-1 rounded-full text-xs md:text-sm`}>
                     {selectedYoga.strength} strength
                   </span>
                   {selectedYoga.is_benefic && (
-                    <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-sm">
+                    <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2.5 md:px-3 py-0.5 md:py-1 rounded-full text-xs md:text-sm">
                       Benefic
                     </span>
                   )}

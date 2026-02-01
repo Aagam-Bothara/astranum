@@ -55,7 +55,9 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Start with sidebar closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [usage, setUsage] = useState<UsageStatus>({
     tier: 'free',
     dailyRemaining: 0,
@@ -72,6 +74,21 @@ export default function ChatPage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  // Detect mobile and set sidebar state
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // Open sidebar by default on desktop only
+      if (!mobile && !initialized) {
+        setSidebarOpen(true);
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [initialized]);
 
   // Get current session's messages
   const currentSession = chatSessions.find(s => s.id === currentSessionId);
@@ -394,6 +411,19 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {sidebarOpen && isMobile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -402,19 +432,36 @@ export default function ChatPage() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -280, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="w-72 flex-shrink-0 border-r border-gray-200 dark:border-white/10 bg-white/50 dark:bg-black/20 backdrop-blur-md flex flex-col"
+            className={`w-72 flex-shrink-0 border-r border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 backdrop-blur-md flex flex-col ${
+              isMobile ? 'fixed inset-y-0 left-0 z-50' : ''
+            }`}
           >
             {/* Sidebar header */}
             <div className="p-4 border-b border-gray-200 dark:border-white/10">
-              <button
-                onClick={() => createNewSession()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-cosmic-600 text-white rounded-xl font-medium hover:from-primary-500 hover:to-cosmic-500 transition-all"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                New Chat
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    createNewSession();
+                    if (isMobile) setSidebarOpen(false);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-cosmic-600 text-white rounded-xl font-medium hover:from-primary-500 hover:to-cosmic-500 transition-all"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  New Chat
+                </button>
+                {isMobile && (
+                  <button
+                    onClick={() => setSidebarOpen(false)}
+                    className="p-3 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Chat list */}
@@ -433,7 +480,10 @@ export default function ChatPage() {
                           ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                           : 'hover:bg-gray-100 dark:hover:bg-white/5'
                       }`}
-                      onClick={() => setCurrentSessionId(session.id)}
+                      onClick={() => {
+                        setCurrentSessionId(session.id);
+                        if (isMobile) setSidebarOpen(false);
+                      }}
                     >
                       <svg className="w-5 h-5 flex-shrink-0 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -467,6 +517,7 @@ export default function ChatPage() {
             <div className="p-4 border-t border-gray-200 dark:border-white/10 space-y-2">
               <Link
                 href="/cosmos"
+                onClick={() => isMobile && setSidebarOpen(false)}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -476,6 +527,7 @@ export default function ChatPage() {
               </Link>
               <Link
                 href="/vedic"
+                onClick={() => isMobile && setSidebarOpen(false)}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
