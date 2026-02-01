@@ -17,6 +17,12 @@ from app.models.person_profile import PersonProfile
 from app.api.deps import get_db, get_current_user
 from app.engines.astrology import AstrologyEngine, GeoLocation
 from app.engines.numerology import NumerologyEngine
+from app.engines.vedic_astrology import (
+    VimshottariDasha,
+    VedicAspects,
+    YogaDetector,
+    TransitAnalyzer,
+)
 
 router = APIRouter()
 
@@ -100,8 +106,14 @@ async def get_birth_chart(
     # Compute astrology data
     location = None
     if profile.latitude and profile.longitude:
-        # Estimate timezone from longitude (rough approximation)
-        timezone_offset = profile.longitude / 15.0
+        # Get timezone offset from profile or use proper lookup
+        from app.services.geocoding_service import get_timezone_offset
+        timezone_offset = 5.5  # Default to IST for Indian users
+        if profile.timezone:
+            timezone_offset = get_timezone_offset(profile.timezone)
+        elif profile.longitude:
+            # Fallback: estimate from longitude (rough approximation)
+            timezone_offset = profile.longitude / 15.0
         location = GeoLocation(
             latitude=profile.latitude,
             longitude=profile.longitude,
@@ -123,7 +135,7 @@ async def get_birth_chart(
     )
 
     # Compute numerology data
-    numerology_data = NumerologyEngine.compute_all(
+    numerology_data = NumerologyEngine.compute(
         full_name=profile.name,
         date_of_birth=profile.date_of_birth,
     )
@@ -213,6 +225,107 @@ async def get_birth_chart(
             "is_retrograde": pos.is_retrograde,
         }
 
+    # Calculate advanced Vedic features
+    vedic_features = {}
+
+    # Calculate Moon longitude for Dasha calculation
+    moon_sign_idx = AstrologyEngine.SIGNS.index(astrology_data.moon_sign.sign)
+    moon_longitude = moon_sign_idx * 30 + astrology_data.moon_sign.degree
+
+    # Vimshottari Dasha
+    try:
+        dasha_periods = VimshottariDasha.calculate_dasha(
+            moon_longitude=moon_longitude,
+            date_of_birth=profile.date_of_birth,
+            years_to_calculate=80,
+        )
+        current_dasha = VimshottariDasha.get_current_dasha(dasha_periods)
+        vedic_features["current_dasha"] = current_dasha
+        vedic_features["dasha_periods"] = [
+            {
+                "planet": d.planet,
+                "start_date": d.start_date.isoformat(),
+                "end_date": d.end_date.isoformat(),
+                "duration_years": round(d.duration_years, 2),
+                "level": d.level,
+            }
+            for d in dasha_periods[:10]  # First 10 periods
+        ]
+    except Exception:
+        pass
+
+    # Vedic Aspects
+    try:
+        all_planets = {"sun": astrology_data.sun_sign, "moon": astrology_data.moon_sign}
+        all_planets.update(astrology_data.planets)
+        aspects = VedicAspects.calculate_aspects(all_planets, AstrologyEngine.SIGNS)
+        vedic_features["aspects"] = [
+            {
+                "aspecting_planet": a.aspecting_planet,
+                "aspected_planet": a.aspected_planet,
+                "aspect_type": a.aspect_type,
+                "orb": a.orb,
+                "strength": a.strength,
+                "is_benefic": a.is_benefic,
+                "description": a.description,
+            }
+            for a in aspects[:15]  # Top 15 aspects
+        ]
+    except Exception:
+        pass
+
+    # Yoga Detection
+    try:
+        ascendant_sign = astrology_data.ascendant.sign if astrology_data.ascendant else astrology_data.sun_sign.sign
+        yogas = YogaDetector.detect_yogas(
+            planets=all_planets,
+            ascendant_sign=ascendant_sign,
+            signs=AstrologyEngine.SIGNS,
+            houses=astrology_data.houses,
+        )
+        vedic_features["yogas"] = [
+            {
+                "name": y.name,
+                "name_sanskrit": y.name_sanskrit,
+                "yoga_type": y.yoga_type,
+                "planets_involved": y.planets_involved,
+                "houses_involved": y.houses_involved,
+                "is_benefic": y.is_benefic,
+                "strength": y.strength,
+                "description": y.description,
+                "effects": y.effects,
+            }
+            for y in yogas
+        ]
+    except Exception:
+        pass
+
+    # Transit Aspects to Natal
+    try:
+        transit_aspects = TransitAnalyzer.analyze_transits(
+            natal_planets=all_planets,
+            transit_planets=transit_data.planets,
+            signs=AstrologyEngine.SIGNS,
+        )
+        vedic_features["transit_aspects"] = [
+            {
+                "transit_planet": ta.transit_planet,
+                "natal_planet": ta.natal_planet,
+                "aspect_type": ta.aspect_type,
+                "transit_sign": ta.transit_sign,
+                "natal_sign": ta.natal_sign,
+                "orb": ta.orb,
+                "is_applying": ta.is_applying,
+                "significance": ta.significance,
+                "interpretation": ta.interpretation,
+            }
+            for ta in transit_aspects[:10]  # Top 10 transit aspects
+        ]
+    except Exception:
+        pass
+
+    response["vedic_features"] = vedic_features
+
     return response
 
 
@@ -277,6 +390,213 @@ async def explain_data_point(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail="Explanation not yet implemented",
     )
+
+
+@router.get("/dasha")
+async def get_dasha_periods(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+    profile_id: Optional[str] = Query(None, description="Profile ID (defaults to primary)"),
+    years: int = Query(80, ge=10, le=120, description="Years of dasha to calculate"),
+):
+    """
+    Get Vimshottari Dasha periods for a profile.
+
+    Returns:
+    - Current Mahadasha and Antardasha
+    - Full dasha timeline
+    - Remaining days in current periods
+    """
+    # Get the profile
+    if profile_id:
+        result = await db.execute(
+            select(PersonProfile).where(
+                PersonProfile.id == profile_id,
+                PersonProfile.user_id == current_user.id,
+            )
+        )
+        profile = result.scalar_one_or_none()
+    else:
+        result = await db.execute(
+            select(PersonProfile).where(
+                PersonProfile.user_id == current_user.id,
+                PersonProfile.is_primary == True,
+            )
+        )
+        profile = result.scalar_one_or_none()
+
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Profile not found.",
+        )
+
+    # Compute astrology to get Moon position
+    location = None
+    if profile.latitude and profile.longitude:
+        from app.services.geocoding_service import get_timezone_offset
+        timezone_offset = 5.5
+        if profile.timezone:
+            timezone_offset = get_timezone_offset(profile.timezone)
+        elif profile.longitude:
+            timezone_offset = profile.longitude / 15.0
+        location = GeoLocation(
+            latitude=profile.latitude,
+            longitude=profile.longitude,
+            timezone_offset=timezone_offset,
+        )
+
+    birth_time = None
+    if profile.time_of_birth:
+        if isinstance(profile.time_of_birth, str):
+            parts = profile.time_of_birth.split(':')
+            birth_time = time(int(parts[0]), int(parts[1]) if len(parts) > 1 else 0)
+        else:
+            birth_time = profile.time_of_birth
+
+    astrology_data = AstrologyEngine.compute(
+        date_of_birth=profile.date_of_birth,
+        time_of_birth=birth_time,
+        location=location,
+    )
+
+    # Calculate Moon longitude
+    moon_sign_idx = AstrologyEngine.SIGNS.index(astrology_data.moon_sign.sign)
+    moon_longitude = moon_sign_idx * 30 + astrology_data.moon_sign.degree
+
+    # Calculate Dasha periods
+    dasha_periods = VimshottariDasha.calculate_dasha(
+        moon_longitude=moon_longitude,
+        date_of_birth=profile.date_of_birth,
+        years_to_calculate=years,
+    )
+
+    # Get current dasha
+    current_dasha = VimshottariDasha.get_current_dasha(dasha_periods)
+
+    # Format response
+    return {
+        "profile_name": profile.name,
+        "moon_nakshatra": astrology_data.moon_nakshatra,
+        "moon_sign": astrology_data.moon_sign.sign,
+        "current_dasha": current_dasha,
+        "dasha_periods": [
+            {
+                "planet": d.planet,
+                "start_date": d.start_date.isoformat(),
+                "end_date": d.end_date.isoformat(),
+                "duration_years": round(d.duration_years, 2),
+                "level": d.level,
+                "sub_periods": [
+                    {
+                        "planet": sp.planet,
+                        "start_date": sp.start_date.isoformat(),
+                        "end_date": sp.end_date.isoformat(),
+                        "duration_years": round(sp.duration_years, 2),
+                    }
+                    for sp in d.sub_periods
+                ] if d.sub_periods else [],
+            }
+            for d in dasha_periods
+        ],
+    }
+
+
+@router.get("/yogas")
+async def get_yogas(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+    profile_id: Optional[str] = Query(None, description="Profile ID (defaults to primary)"),
+):
+    """
+    Get detected Vedic yogas for a profile.
+
+    Returns all yoga combinations found in the birth chart.
+    """
+    # Get the profile (similar to dasha endpoint)
+    if profile_id:
+        result = await db.execute(
+            select(PersonProfile).where(
+                PersonProfile.id == profile_id,
+                PersonProfile.user_id == current_user.id,
+            )
+        )
+        profile = result.scalar_one_or_none()
+    else:
+        result = await db.execute(
+            select(PersonProfile).where(
+                PersonProfile.user_id == current_user.id,
+                PersonProfile.is_primary == True,
+            )
+        )
+        profile = result.scalar_one_or_none()
+
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Profile not found.",
+        )
+
+    # Compute astrology
+    location = None
+    if profile.latitude and profile.longitude:
+        from app.services.geocoding_service import get_timezone_offset
+        timezone_offset = 5.5
+        if profile.timezone:
+            timezone_offset = get_timezone_offset(profile.timezone)
+        location = GeoLocation(
+            latitude=profile.latitude,
+            longitude=profile.longitude,
+            timezone_offset=timezone_offset,
+        )
+
+    birth_time = None
+    if profile.time_of_birth:
+        if isinstance(profile.time_of_birth, str):
+            parts = profile.time_of_birth.split(':')
+            birth_time = time(int(parts[0]), int(parts[1]) if len(parts) > 1 else 0)
+        else:
+            birth_time = profile.time_of_birth
+
+    astrology_data = AstrologyEngine.compute(
+        date_of_birth=profile.date_of_birth,
+        time_of_birth=birth_time,
+        location=location,
+    )
+
+    # Get all planets
+    all_planets = {"sun": astrology_data.sun_sign, "moon": astrology_data.moon_sign}
+    all_planets.update(astrology_data.planets)
+
+    # Detect yogas
+    ascendant_sign = astrology_data.ascendant.sign if astrology_data.ascendant else astrology_data.sun_sign.sign
+    yogas = YogaDetector.detect_yogas(
+        planets=all_planets,
+        ascendant_sign=ascendant_sign,
+        signs=AstrologyEngine.SIGNS,
+        houses=astrology_data.houses,
+    )
+
+    return {
+        "profile_name": profile.name,
+        "ascendant": ascendant_sign,
+        "yogas": [
+            {
+                "name": y.name,
+                "name_sanskrit": y.name_sanskrit,
+                "yoga_type": y.yoga_type,
+                "planets_involved": y.planets_involved,
+                "houses_involved": y.houses_involved,
+                "is_benefic": y.is_benefic,
+                "strength": y.strength,
+                "description": y.description,
+                "effects": y.effects,
+            }
+            for y in yogas
+        ],
+        "total_yogas": len(yogas),
+        "benefic_yogas": len([y for y in yogas if y.is_benefic]),
+    }
 
 
 # Planet information for the visualization

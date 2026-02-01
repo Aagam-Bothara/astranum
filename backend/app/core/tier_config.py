@@ -139,7 +139,7 @@ FREE_TIER = TierConfig(
 
     # Response: Short, no explanation, Haiku model (~₹0.80/chat)
     response=ResponseFeatures(
-        max_characters=400,
+        max_characters=600,  # Increased from 400 to allow complete sentences
         include_explanation=False,
         explanation_bullets=0,
         use_validator=False,

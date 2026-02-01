@@ -183,8 +183,11 @@ class GuidanceService:
         if max_chars == 0:
             max_tokens = 2000  # Allow longer responses for paid tiers
         else:
-            # Rough estimate: 1 token ~= 4 characters
-            max_tokens = min(max_chars // 3, 1500)
+            # Token estimation: 1 token ~= 4 characters on average
+            # Add 20% buffer to allow sentence completion (prevents mid-sentence cutoffs)
+            base_tokens = max_chars // 4
+            completion_buffer = max(base_tokens // 5, 30)  # At least 30 tokens buffer
+            max_tokens = min(base_tokens + completion_buffer, 1500)
 
         # For Pro tier: Use Generator + Validator pipeline
         # For Free/Starter: Generator only (single LLM call)
@@ -516,9 +519,17 @@ class GuidanceService:
 Include a "Why this matters" section with {tier_config.response.explanation_bullets} bullet points explaining the astrological/numerological reasoning behind your guidance.
 """
         else:
-            explanation_instruction = """
-## RESPONSE LENGTH:
-Keep your response concise and focused. Do not include detailed explanations of astrological concepts.
+            # Free tier - add conciseness instruction to prevent mid-sentence cutoffs
+            max_chars = tier_config.response.max_characters
+            explanation_instruction = f"""
+## RESPONSE LENGTH (CRITICAL):
+Your response MUST be concise and under {max_chars} characters.
+- Keep your response focused and complete within the limit
+- Always finish your sentences - NEVER stop mid-sentence
+- Prioritize the most important insight over covering everything
+- Use short, impactful sentences
+- If you have more to say, end with a complete thought like "For deeper insights, consider upgrading your plan."
+DO NOT let your response get cut off mid-sentence!
 """
 
         # Response style instructions based on user preference

@@ -124,6 +124,54 @@ class AstrologyEngine:
     AYANAMSA_RAMAN = 3   # swe.SIDM_RAMAN
     AYANAMSA_KP = 5      # swe.SIDM_KRISHNAMURTI
 
+    # Planetary Dignity (Vedic) - Exaltation signs and degrees
+    # Format: planet -> (exaltation_sign, exaltation_degree, debilitation_sign)
+    EXALTATION = {
+        "sun": ("Aries", 10, "Libra"),
+        "moon": ("Taurus", 3, "Scorpio"),
+        "mars": ("Capricorn", 28, "Cancer"),
+        "mercury": ("Virgo", 15, "Pisces"),
+        "jupiter": ("Cancer", 5, "Capricorn"),
+        "venus": ("Pisces", 27, "Virgo"),
+        "saturn": ("Libra", 20, "Aries"),
+        "rahu": ("Taurus", 20, "Scorpio"),  # Traditional view
+        "ketu": ("Scorpio", 20, "Taurus"),
+    }
+
+    # Own Signs (Swakshetra) - planets rule these signs
+    OWN_SIGNS = {
+        "sun": ["Leo"],
+        "moon": ["Cancer"],
+        "mars": ["Aries", "Scorpio"],
+        "mercury": ["Gemini", "Virgo"],
+        "jupiter": ["Sagittarius", "Pisces"],
+        "venus": ["Taurus", "Libra"],
+        "saturn": ["Capricorn", "Aquarius"],
+        "rahu": ["Aquarius"],  # Modern assignment
+        "ketu": ["Scorpio"],   # Modern assignment
+    }
+
+    # Moolatrikona signs and degree ranges (special strength)
+    MOOLATRIKONA = {
+        "sun": ("Leo", 0, 20),        # Leo 0-20°
+        "moon": ("Taurus", 4, 30),    # Taurus 4-30°
+        "mars": ("Aries", 0, 12),     # Aries 0-12°
+        "mercury": ("Virgo", 16, 20), # Virgo 16-20°
+        "jupiter": ("Sagittarius", 0, 10),  # Sagittarius 0-10°
+        "venus": ("Libra", 0, 15),    # Libra 0-15°
+        "saturn": ("Aquarius", 0, 20), # Aquarius 0-20°
+    }
+
+    # Combustion ranges (degrees from Sun where planet loses strength)
+    COMBUSTION_RANGE = {
+        "moon": 12,
+        "mars": 17,
+        "mercury": 14,  # 12 if retrograde
+        "jupiter": 11,
+        "venus": 10,    # 8 if retrograde
+        "saturn": 15,
+    }
+
     @classmethod
     def compute(
         cls,
@@ -186,8 +234,15 @@ class AstrologyEngine:
         if include_outer_planets:
             planets_to_calc.update(cls.OUTER_PLANETS)
 
+        # First pass: calculate Sun to get its longitude for combustion checks
+        sun_result, _ = swe.calc_ut(jd, 0, calc_flags)
+        sun_longitude = sun_result[0]
+
+        # Calculate all planets with dignity and combustion
         for name, planet_id in planets_to_calc.items():
-            pos, longitude = cls._calculate_planet_position(jd, planet_id, calc_flags)
+            pos, longitude = cls._calculate_planet_position(
+                jd, planet_id, calc_flags, name, sun_longitude
+            )
             planets[name] = pos
             planet_longitudes[name] = longitude
 
@@ -195,7 +250,9 @@ class AstrologyEngine:
         rahu_longitude = planet_longitudes["rahu"]
         ketu_longitude = (rahu_longitude + 180) % 360
         # Ketu has same retrograde status as Rahu (nodes are always retrograde)
-        planets["ketu"] = cls._longitude_to_position(ketu_longitude, is_retrograde=True)
+        planets["ketu"] = cls._longitude_to_position(
+            ketu_longitude, is_retrograde=True, planet_name="ketu", sun_longitude=sun_longitude
+        )
         planet_longitudes["ketu"] = ketu_longitude
 
         # Get Sun and Moon (keep in planets dict but also return separately)
@@ -301,6 +358,8 @@ class AstrologyEngine:
         jd: float,
         planet_id: int,
         flags: int = 0,
+        planet_name: Optional[str] = None,
+        sun_longitude: Optional[float] = None,
     ) -> Tuple[PlanetPosition, float]:
         """
         Calculate planet position for given Julian Day.
@@ -320,23 +379,99 @@ class AstrologyEngine:
         if planet_id in (10, 11):
             is_retrograde = True
 
-        return cls._longitude_to_position(longitude, is_retrograde), longitude
+        return cls._longitude_to_position(
+            longitude, is_retrograde, planet_name, sun_longitude
+        ), longitude
 
     @classmethod
     def _longitude_to_position(
         cls,
         longitude: float,
         is_retrograde: bool = False,
+        planet_name: Optional[str] = None,
+        sun_longitude: Optional[float] = None,
     ) -> PlanetPosition:
         """Convert ecliptic longitude to sign and degree."""
         sign_index = int(longitude / 30) % 12
         degree_in_sign = longitude % 30
+        sign = cls.SIGNS[sign_index]
+
+        # Calculate dignity if planet name provided
+        dignity = None
+        is_combust = None
+        if planet_name and planet_name in cls.EXALTATION:
+            dignity = cls._calculate_dignity(planet_name, sign, degree_in_sign)
+
+        # Check combustion if Sun longitude provided
+        if planet_name and sun_longitude is not None and planet_name != "sun":
+            is_combust = cls._check_combustion(planet_name, longitude, sun_longitude, is_retrograde)
 
         return PlanetPosition(
-            sign=cls.SIGNS[sign_index],
+            sign=sign,
             degree=round(degree_in_sign, 2),
             is_retrograde=is_retrograde,
+            dignity=dignity,
+            is_combust=is_combust,
         )
+
+    @classmethod
+    def _calculate_dignity(cls, planet: str, sign: str, degree: float) -> str:
+        """
+        Calculate planetary dignity (strength) based on sign placement.
+
+        Returns one of: exalted, moolatrikona, own_sign, friendly, neutral, enemy, debilitated
+        """
+        if planet not in cls.EXALTATION:
+            return "neutral"
+
+        exalt_sign, exalt_degree, debil_sign = cls.EXALTATION[planet]
+
+        # Check exaltation (strongest)
+        if sign == exalt_sign:
+            return "exalted"
+
+        # Check debilitation (weakest)
+        if sign == debil_sign:
+            return "debilitated"
+
+        # Check Moolatrikona (special strength)
+        if planet in cls.MOOLATRIKONA:
+            mt_sign, mt_start, mt_end = cls.MOOLATRIKONA[planet]
+            if sign == mt_sign and mt_start <= degree < mt_end:
+                return "moolatrikona"
+
+        # Check own sign
+        if planet in cls.OWN_SIGNS and sign in cls.OWN_SIGNS[planet]:
+            return "own_sign"
+
+        # Default to neutral (friendly/enemy requires complex relationship charts)
+        return "neutral"
+
+    @classmethod
+    def _check_combustion(
+        cls,
+        planet: str,
+        planet_longitude: float,
+        sun_longitude: float,
+        is_retrograde: bool = False,
+    ) -> bool:
+        """Check if a planet is combust (too close to Sun)."""
+        if planet not in cls.COMBUSTION_RANGE:
+            return False
+
+        # Calculate angular distance from Sun
+        diff = abs(planet_longitude - sun_longitude)
+        if diff > 180:
+            diff = 360 - diff
+
+        combustion_range = cls.COMBUSTION_RANGE[planet]
+        # Mercury and Venus have smaller range when retrograde
+        if is_retrograde and planet == "mercury":
+            combustion_range = 12
+        elif is_retrograde and planet == "venus":
+            combustion_range = 8
+
+        return diff <= combustion_range
 
     @classmethod
     def _calculate_houses(
