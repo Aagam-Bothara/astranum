@@ -1,17 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
 import GoogleSignIn from '@/components/GoogleSignIn';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Step = 'details' | 'verify';
 
 export default function SignupPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading, hasProfile, refreshUser } = useAuth();
   const [step, setStep] = useState<Step>('details');
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (authLoading) return;
+    if (isAuthenticated) {
+      router.replace(hasProfile ? '/chat' : '/onboard');
+    }
+  }, [authLoading, isAuthenticated, hasProfile, router]);
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
@@ -94,6 +104,9 @@ export default function SignupPage() {
       // Login after verification
       await api.login(email, password);
 
+      // Refresh auth state
+      await refreshUser();
+
       // Redirect to onboarding
       router.push('/onboard');
     } catch (err: any) {
@@ -137,6 +150,8 @@ export default function SignupPage() {
     try {
       // Login without verification
       await api.login(email, password);
+      // Refresh auth state
+      await refreshUser();
       router.push('/onboard');
     } catch (err: any) {
       const detail = err.response?.data?.detail;
@@ -273,7 +288,10 @@ export default function SignupPage() {
             </div>
 
             <GoogleSignIn
-              onSuccess={() => router.push('/onboard')}
+              onSuccess={async () => {
+                await refreshUser();
+                // useEffect will handle redirect
+              }}
               onError={(err) => setError(err)}
               buttonText="signup_with"
             />

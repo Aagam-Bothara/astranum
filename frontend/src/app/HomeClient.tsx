@@ -1,34 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomeClient() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState<string | null>(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+  const { isAuthenticated, isLoading, user, hasProfile } = useAuth();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        api.loadToken();
-        const response = await api.getProfile();
-        const data = response.data as any;
-        if (data) {
-          setIsLoggedIn(true);
-          setUserName(data.display_name || data.full_name || data.fullName || null);
-        }
-      } catch {
-        setIsLoggedIn(false);
-      } finally {
-        setCheckingAuth(false);
-      }
-    };
-    checkAuth();
-  }, []);
+  // Get user display name
+  const userName = user ? ((user as any).display_name || (user as any).full_name || (user as any).fullName || null) : null;
+
+  // Determine where to go - if user has profile, go to chat, otherwise onboard
+  const userDestination = hasProfile ? '/chat' : '/onboard';
 
   return (
     <main className="min-h-screen">
@@ -42,16 +26,18 @@ export default function HomeClient() {
           <div className="flex items-center gap-3">
             <ThemeToggle />
 
-            {!checkingAuth && (
-              isLoggedIn ? (
+            {!isLoading && (
+              isAuthenticated ? (
                 <Link
-                  href="/chat"
+                  href={userDestination}
                   className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur border border-white/20 rounded-full hover:bg-white/20 transition-all"
                 >
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-cosmic-500 flex items-center justify-center text-white text-sm font-medium">
                     {userName?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
-                  <span className="text-sm font-medium hidden sm:inline">Go to Chat</span>
+                  <span className="text-sm font-medium hidden sm:inline">
+                    {hasProfile ? 'Go to Chat' : 'Complete Setup'}
+                  </span>
                 </Link>
               ) : (
                 <div className="flex items-center gap-2">
@@ -108,10 +94,10 @@ export default function HomeClient() {
             </Link>
 
             <Link
-              href="/pricing"
+              href="/cosmos"
               className="px-8 py-4 bg-white/10 backdrop-blur text-gray-700 dark:text-white border border-gray-200 dark:border-white/20 rounded-full font-semibold text-lg hover:bg-white/20 transition-all"
             >
-              View Plans
+              View Planetary Positions
             </Link>
           </div>
         </div>

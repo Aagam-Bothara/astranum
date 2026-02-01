@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { DatePicker } from '@/components/DatePicker';
 import { TimePicker } from '@/components/TimePicker';
 import { PlacePicker } from '@/components/PlacePicker';
+import { useAuth } from '@/contexts/AuthContext';
 
 type GuidanceMode = 'astrology' | 'numerology' | 'both';
 type Language = 'en' | 'hi' | 'hinglish';
@@ -24,14 +25,41 @@ interface OnboardingData {
 
 export default function OnboardPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading, hasProfile, refreshUser } = useAuth();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [checkingProfile, setCheckingProfile] = useState(true);
   const [data, setData] = useState<Partial<OnboardingData>>({
     mode: 'both',
     language: 'hinglish',
     responseStyle: 'balanced',
   });
+
+  // Check if user already has a profile - redirect to chat if they do
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (isAuthenticated && hasProfile) {
+      // User already has a profile, skip to chat
+      router.replace('/chat');
+      return;
+    }
+
+    setCheckingProfile(false);
+  }, [authLoading, isAuthenticated, hasProfile, router]);
+
+  // Show loading while checking profile
+  if (authLoading || checkingProfile) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mb-4"></div>
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </main>
+    );
+  }
 
   const handleModeSelect = (mode: GuidanceMode) => {
     setData({ ...data, mode });
@@ -83,6 +111,9 @@ export default function OnboardPage() {
         language: finalData.language,
         guidanceMode: finalData.mode,
       });
+
+      // Refresh auth state to update hasProfile
+      await refreshUser();
 
       // Success - redirect to chat
       router.push('/chat');

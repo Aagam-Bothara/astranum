@@ -1,18 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { api } from '@/lib/api';
 import GoogleSignIn from '@/components/GoogleSignIn';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading, hasProfile, refreshUser } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (authLoading) return;
+    if (isAuthenticated) {
+      router.replace(hasProfile ? '/chat' : '/onboard');
+    }
+  }, [authLoading, isAuthenticated, hasProfile, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,10 +31,10 @@ export default function LoginPage() {
 
     try {
       await api.login(email, password);
-      router.push('/chat');
+      await refreshUser();
+      // The useEffect will handle redirect based on hasProfile
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Invalid email or password');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -116,7 +126,10 @@ export default function LoginPage() {
           </div>
 
           <GoogleSignIn
-            onSuccess={() => router.push('/chat')}
+            onSuccess={async () => {
+              await refreshUser();
+              // useEffect will handle redirect
+            }}
             onError={(err) => setError(err)}
             buttonText="signin_with"
           />

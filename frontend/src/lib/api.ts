@@ -171,6 +171,23 @@ class ApiClient {
     return { data: response.data };
   }
 
+  async getCurrentTransits(): Promise<ApiResponse<any>> {
+    const response = await this.client.get('/charts/transits');
+    return { data: response.data };
+  }
+
+  async getBirthChart(profileId?: string): Promise<ApiResponse<any>> {
+    const response = await this.client.get('/charts/birth-chart', {
+      params: profileId ? { profile_id: profileId } : {},
+    });
+    return { data: response.data };
+  }
+
+  async getPlanetInfo(planetName: string): Promise<ApiResponse<any>> {
+    const response = await this.client.get(`/charts/planet-info/${planetName}`);
+    return { data: response.data };
+  }
+
   // Subscription endpoints
   async getCurrentSubscription(): Promise<ApiResponse<Subscription>> {
     const response = await this.client.get('/subscriptions/current');
