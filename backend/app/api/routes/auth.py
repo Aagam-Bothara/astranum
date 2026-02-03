@@ -1,10 +1,12 @@
 """Authentication routes."""
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.schemas.auth import Token, LoginRequest
 from app.schemas.user import UserCreate, UserResponse, SendOTPRequest, VerifyOTPRequest
@@ -16,6 +18,7 @@ from app.models.otp import OTPType, OTPPurpose
 from app.services.otp_service import OTPService
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -36,7 +39,9 @@ class GoogleAuthRequest(BaseModel):
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
 async def register(
+    request: Request,
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db),
 ):
@@ -91,29 +96,31 @@ async def register(
 
 
 @router.post("/send-otp")
+@limiter.limit("3/minute")
 async def send_otp(
-    request: SendOTPRequest,
+    request: Request,
+    otp_request: SendOTPRequest,
     db: AsyncSession = Depends(get_db),
 ):
     """Send OTP for verification."""
     otp_service = OTPService(db)
 
     # Determine OTP type
-    otp_type = OTPType.EMAIL if request.type == "email" else OTPType.PHONE
-    purpose = OTPPurpose(request.purpose)
+    otp_type = OTPType.EMAIL if otp_request.type == "email" else OTPType.PHONE
+    purpose = OTPPurpose(otp_request.purpose)
 
     # Generate OTP
     code = await otp_service.create_otp(
-        target=request.target,
+        target=otp_request.target,
         otp_type=otp_type,
         purpose=purpose,
     )
 
     # Send OTP
     if otp_type == OTPType.EMAIL:
-        success = await otp_service.send_email_otp(request.target, code)
+        success = await otp_service.send_email_otp(otp_request.target, code)
     else:
-        success = await otp_service.send_sms_otp(request.target, code)
+        success = await otp_service.send_sms_otp(otp_request.target, code)
 
     if not success:
         raise HTTPException(
@@ -122,25 +129,27 @@ async def send_otp(
         )
 
     return {
-        "message": f"OTP sent to {request.target}",
+        "message": f"OTP sent to {otp_request.target}",
         "expires_in_minutes": 10,
     }
 
 
 @router.post("/verify-otp")
+@limiter.limit("10/minute")
 async def verify_otp(
-    request: VerifyOTPRequest,
+    request: Request,
+    otp_request: VerifyOTPRequest,
     db: AsyncSession = Depends(get_db),
 ):
     """Verify OTP."""
     otp_service = OTPService(db)
 
-    otp_type = OTPType.EMAIL if request.type == "email" else OTPType.PHONE
-    purpose = OTPPurpose(request.purpose)
+    otp_type = OTPType.EMAIL if otp_request.type == "email" else OTPType.PHONE
+    purpose = OTPPurpose(otp_request.purpose)
 
     success, message = await otp_service.verify_otp(
-        target=request.target,
-        code=request.code,
+        target=otp_request.target,
+        code=otp_request.code,
         otp_type=otp_type,
         purpose=purpose,
     )
@@ -155,7 +164,7 @@ async def verify_otp(
     if purpose == OTPPurpose.SIGNUP:
         if otp_type == OTPType.EMAIL:
             result = await db.execute(
-                select(User).where(User.email == request.target)
+                select(User).where(User.email == otp_request.target)
             )
             user = result.scalar_one_or_none()
             if user:
@@ -163,7 +172,7 @@ async def verify_otp(
                 await db.commit()
         else:  # Phone verification
             result = await db.execute(
-                select(User).where(User.phone_number == request.target)
+                select(User).where(User.phone_number == otp_request.target)
             )
             user = result.scalar_one_or_none()
             if user:
@@ -174,7 +183,9 @@ async def verify_otp(
 
 
 @router.post("/login", response_model=Token)
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     credentials: LoginRequest,
     db: AsyncSession = Depends(get_db),
 ):
@@ -218,8 +229,10 @@ async def logout():
 
 
 @router.post("/forgot-password")
+@limiter.limit("3/minute")
 async def forgot_password(
-    request: ForgotPasswordRequest,
+    request: Request,
+    forgot_request: ForgotPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -229,7 +242,7 @@ async def forgot_password(
     """
     # Check if user exists
     result = await db.execute(
-        select(User).where(User.email == request.email)
+        select(User).where(User.email == forgot_request.email)
     )
     user = result.scalar_one_or_none()
 
@@ -243,12 +256,12 @@ async def forgot_password(
     # Generate and send OTP
     otp_service = OTPService(db)
     code = await otp_service.create_otp(
-        target=request.email,
+        target=forgot_request.email,
         otp_type=OTPType.EMAIL,
         purpose=OTPPurpose.PASSWORD_RESET,
     )
 
-    success = await otp_service.send_email_otp(request.email, code)
+    success = await otp_service.send_email_otp(forgot_request.email, code)
 
     if not success:
         raise HTTPException(
@@ -263,8 +276,10 @@ async def forgot_password(
 
 
 @router.post("/reset-password")
+@limiter.limit("5/minute")
 async def reset_password(
-    request: ResetPasswordRequest,
+    request: Request,
+    reset_request: ResetPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -275,8 +290,8 @@ async def reset_password(
     # Verify OTP first
     otp_service = OTPService(db)
     success, message = await otp_service.verify_otp(
-        target=request.email,
-        code=request.code,
+        target=reset_request.email,
+        code=reset_request.code,
         otp_type=OTPType.EMAIL,
         purpose=OTPPurpose.PASSWORD_RESET,
     )
@@ -289,7 +304,7 @@ async def reset_password(
 
     # Find user and update password
     result = await db.execute(
-        select(User).where(User.email == request.email)
+        select(User).where(User.email == reset_request.email)
     )
     user = result.scalar_one_or_none()
 
@@ -300,15 +315,17 @@ async def reset_password(
         )
 
     # Update password
-    user.hashed_password = get_password_hash(request.new_password)
+    user.hashed_password = get_password_hash(reset_request.new_password)
     await db.commit()
 
     return {"message": "Password reset successfully. You can now login with your new password."}
 
 
 @router.post("/google", response_model=Token)
+@limiter.limit("10/minute")
 async def google_auth(
-    request: GoogleAuthRequest,
+    request: Request,
+    google_request: GoogleAuthRequest,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -324,9 +341,9 @@ async def google_auth(
 
     # Verify the ID token with Google
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(
-                f"https://oauth2.googleapis.com/tokeninfo?id_token={request.credential}"
+                f"https://oauth2.googleapis.com/tokeninfo?id_token={google_request.credential}"
             )
 
             if response.status_code != 200:

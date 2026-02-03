@@ -1,7 +1,7 @@
 """OTP Service for email/phone verification."""
 
 import asyncio
-import random
+import secrets
 import string
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
@@ -32,8 +32,8 @@ class OTPService:
         self.db = db
 
     def _generate_otp(self) -> str:
-        """Generate a random 6-digit OTP."""
-        return ''.join(random.choices(string.digits, k=self.OTP_LENGTH))
+        """Generate a cryptographically secure random 6-digit OTP."""
+        return ''.join(secrets.choice(string.digits) for _ in range(self.OTP_LENGTH))
 
     async def create_otp(
         self,
@@ -200,12 +200,10 @@ class OTPService:
             return True
 
         except Exception as e:
-            print(f"[EMAIL OTP ERROR] Failed to send to {email}: {str(e)}")
-            # Fallback: log the OTP for development
-            print(f"[EMAIL OTP FALLBACK] Code for {email}: {code}")
-            # Return True in development mode so the flow continues
+            # Log error without exposing OTP in production
             if settings.DEBUG:
-                return True
+                print(f"[EMAIL OTP ERROR] Failed to send to {email}: {str(e)}")
+                return True  # Allow flow to continue in development
             return False
 
     async def send_sms_otp(self, phone: str, code: str) -> bool:
@@ -213,12 +211,13 @@ class OTPService:
         Send OTP via SMS.
 
         TODO: Integrate with SMS service (Twilio, MSG91, etc.)
-        For now, this just logs the OTP.
         """
-        print(f"[SMS OTP] Sending OTP {code} to {phone}")
         # In production, integrate with SMS service:
         # - Twilio
         # - MSG91 (popular in India)
         # - AWS SNS
-        # - etc.
-        return True
+        if settings.DEBUG:
+            print(f"[SMS OTP] Would send OTP to {phone}")
+            return True
+        # SMS not implemented yet - return False in production
+        return False
