@@ -1047,11 +1047,13 @@ function WelcomeMessage({ onQuestionClick }: { onQuestionClick: (question: strin
 
 function DailyEnergyCard() {
   const [energy, setEnergy] = useState<{
+    date: string;
     moon_sign: string;
     emoji: string;
     energy: string;
     summary: string;
     tip: string;
+    retrograde_planets: string[];
     retrograde_warning: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1059,7 +1061,9 @@ function DailyEnergyCard() {
   useEffect(() => {
     api.getDailyEnergy()
       .then(response => {
-        setEnergy(response.data);
+        if (response.data) {
+          setEnergy(response.data);
+        }
       })
       .catch(() => {
         // Silently fail - card just won't show
