@@ -58,6 +58,73 @@ async def get_current_transits():
     }
 
 
+@router.get("/daily-energy")
+async def get_daily_energy():
+    """
+    Get today's cosmic energy summary.
+
+    This is a FREE public endpoint that provides a brief daily insight
+    based on current planetary positions. No authentication required.
+    Does not count as a question.
+    """
+    transit_data = AstrologyEngine.compute_transits()
+
+    # Determine key aspects of today's energy
+    insights = []
+    moon_sign = None
+    retrograde_planets = []
+
+    for name, pos in transit_data.planets.items():
+        if name == "Moon":
+            moon_sign = pos.sign
+        if pos.is_retrograde and name not in ["Rahu", "Ketu"]:  # Rahu/Ketu are always retrograde
+            retrograde_planets.append(name)
+
+    # Moon sign insight
+    moon_insights = {
+        "Aries": {"emoji": "🔥", "energy": "Bold", "tip": "Take initiative on new projects"},
+        "Taurus": {"emoji": "🌿", "energy": "Grounded", "tip": "Focus on comfort and stability"},
+        "Gemini": {"emoji": "💬", "energy": "Communicative", "tip": "Great day for conversations and learning"},
+        "Cancer": {"emoji": "🏠", "energy": "Nurturing", "tip": "Connect with family and loved ones"},
+        "Leo": {"emoji": "🌟", "energy": "Creative", "tip": "Express yourself and shine bright"},
+        "Virgo": {"emoji": "📋", "energy": "Analytical", "tip": "Perfect for detailed work and organization"},
+        "Libra": {"emoji": "⚖️", "energy": "Harmonious", "tip": "Seek balance in relationships"},
+        "Scorpio": {"emoji": "🔮", "energy": "Intense", "tip": "Deep reflection and transformation"},
+        "Sagittarius": {"emoji": "🏹", "energy": "Adventurous", "tip": "Explore new ideas and possibilities"},
+        "Capricorn": {"emoji": "🏔️", "energy": "Ambitious", "tip": "Focus on long-term goals"},
+        "Aquarius": {"emoji": "💡", "energy": "Innovative", "tip": "Think outside the box"},
+        "Pisces": {"emoji": "🌊", "energy": "Intuitive", "tip": "Trust your inner guidance"},
+    }
+
+    moon_info = moon_insights.get(moon_sign, {"emoji": "🌙", "energy": "Reflective", "tip": "Take time to observe"})
+
+    # Build summary
+    summary = f"Moon in {moon_sign} brings {moon_info['energy'].lower()} energy today."
+
+    # Add retrograde warning if any
+    retrograde_warning = None
+    if retrograde_planets:
+        if "Mercury" in retrograde_planets:
+            retrograde_warning = "Mercury retrograde: Double-check communications and travel plans."
+        elif "Venus" in retrograde_planets:
+            retrograde_warning = "Venus retrograde: Reflect on relationships and values."
+        elif "Mars" in retrograde_planets:
+            retrograde_warning = "Mars retrograde: Patience with actions and decisions."
+        else:
+            retrograde_warning = f"{', '.join(retrograde_planets)} retrograde: Some areas may need review."
+
+    return {
+        "date": transit_data.date,
+        "moon_sign": moon_sign,
+        "emoji": moon_info["emoji"],
+        "energy": moon_info["energy"],
+        "summary": summary,
+        "tip": moon_info["tip"],
+        "retrograde_planets": retrograde_planets,
+        "retrograde_warning": retrograde_warning,
+    }
+
+
 @router.get("/birth-chart")
 async def get_birth_chart(
     db: AsyncSession = Depends(get_db),

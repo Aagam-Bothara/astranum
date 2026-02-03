@@ -72,8 +72,74 @@ export default function ChatPage() {
   const [responseStyle, setResponseStyle] = useState<'supportive' | 'balanced' | 'direct'>('balanced');
   const [language, setLanguage] = useState<'en' | 'hi' | 'hinglish'>('hinglish');
   const [savingSettings, setSavingSettings] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Check if voice features are available (paid plans only)
+  const hasVoiceFeatures = usage.tier !== 'free';
+
+  // Voice input using Web Speech API
+  const startListening = useCallback(() => {
+    if (!hasVoiceFeatures) return;
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Voice input is not supported in your browser. Try Chrome or Edge.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = language === 'hi' ? 'hi-IN' : language === 'hinglish' ? 'hi-IN' : 'en-US';
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((result: any) => result[0].transcript)
+        .join('');
+      setInput(transcript);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  }, [hasVoiceFeatures, language]);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  }, []);
+
+  // Text-to-speech for reading responses
+  const speakText = useCallback((text: string) => {
+    if (!hasVoiceFeatures || !window.speechSynthesis) return;
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = language === 'hi' ? 'hi-IN' : language === 'hinglish' ? 'hi-IN' : 'en-US';
+    utterance.rate = 0.9;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  }, [hasVoiceFeatures, language]);
+
+  const stopSpeaking = useCallback(() => {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  }, []);
 
   // Detect mobile and set sidebar state
   useEffect(() => {
@@ -727,7 +793,13 @@ export default function ChatPage() {
             ) : (
               <AnimatePresence>
                 {messages.map((message) => (
-                  <MessageBubble key={message.id} message={message} />
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    onSpeak={hasVoiceFeatures ? speakText : undefined}
+                    isSpeaking={isSpeaking}
+                    onStopSpeaking={stopSpeaking}
+                  />
                 ))}
               </AnimatePresence>
             )}
@@ -752,14 +824,39 @@ export default function ChatPage() {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="flex gap-3">
+              <form onSubmit={handleSubmit} className="flex gap-2">
+                {/* Voice input button - paid plans only */}
+                {hasVoiceFeatures && (
+                  <button
+                    type="button"
+                    onClick={isListening ? stopListening : startListening}
+                    disabled={isLoading}
+                    className={`p-3 rounded-xl transition-all ${
+                      isListening
+                        ? 'bg-red-500 text-white animate-pulse'
+                        : 'bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-600 dark:text-gray-400'
+                    }`}
+                    title={isListening ? 'Stop listening' : 'Voice input'}
+                  >
+                    {isListening ? (
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                    )}
+                  </button>
+                )}
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask about your patterns..."
+                  placeholder={isListening ? 'Listening...' : 'Ask about your patterns...'}
                   className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                  disabled={isLoading}
+                  disabled={isLoading || isListening}
                 />
                 <button
                   type="submit"
@@ -920,12 +1017,15 @@ function WelcomeMessage({ onQuestionClick }: { onQuestionClick: (question: strin
         <span className="text-3xl">✨</span>
       </div>
       <h2 className="text-2xl font-bold mb-3">Welcome to AstraVaani</h2>
-      <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+      <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
         Ask questions about your life patterns. I&apos;ll provide guidance based on
         your computed chart data.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
+      {/* Daily Energy Card */}
+      <DailyEnergyCard />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto mt-6">
         {[
           'What does my chart say about my career?',
           'How can I improve my relationships?',
@@ -945,7 +1045,78 @@ function WelcomeMessage({ onQuestionClick }: { onQuestionClick: (question: strin
   );
 }
 
-function MessageBubble({ message }: { message: Message }) {
+function DailyEnergyCard() {
+  const [energy, setEnergy] = useState<{
+    moon_sign: string;
+    emoji: string;
+    energy: string;
+    summary: string;
+    tip: string;
+    retrograde_warning: string | null;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getDailyEnergy()
+      .then(response => {
+        setEnergy(response.data);
+      })
+      .catch(() => {
+        // Silently fail - card just won't show
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="max-w-md mx-auto mb-6 p-4 rounded-xl bg-gradient-to-r from-cosmic-500/10 to-primary-500/10 border border-cosmic-500/20 animate-pulse">
+        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto"></div>
+      </div>
+    );
+  }
+
+  if (!energy) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="max-w-md mx-auto mb-6 p-4 rounded-xl bg-gradient-to-r from-cosmic-500/10 to-primary-500/10 border border-cosmic-500/20"
+    >
+      <div className="flex items-center justify-center gap-2 mb-2">
+        <span className="text-2xl">{energy.emoji}</span>
+        <span className="font-semibold text-cosmic-600 dark:text-cosmic-400">
+          Today&apos;s Energy: {energy.energy}
+        </span>
+      </div>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+        {energy.summary}
+      </p>
+      <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">
+        💡 {energy.tip}
+      </p>
+      {energy.retrograde_warning && (
+        <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+          ⚠️ {energy.retrograde_warning}
+        </p>
+      )}
+    </motion.div>
+  );
+}
+
+function MessageBubble({
+  message,
+  onSpeak,
+  isSpeaking,
+  onStopSpeaking,
+}: {
+  message: Message;
+  onSpeak?: (text: string) => void;
+  isSpeaking?: boolean;
+  onStopSpeaking?: () => void;
+}) {
   const isUser = message.role === 'user';
 
   return (
@@ -969,19 +1140,43 @@ function MessageBubble({ message }: { message: Message }) {
           </div>
         )}
 
-        {!isUser && message.metadata?.dataPointsUsed && message.metadata.dataPointsUsed.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-white/10">
-            <button className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              Based on: {message.metadata.dataPointsUsed.join(', ')}
-            </button>
+        {!isUser && (
+          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-white/10 flex items-center justify-between">
+            {message.metadata?.dataPointsUsed && message.metadata.dataPointsUsed.length > 0 && (
+              <span className="text-xs text-gray-500 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                Based on: {message.metadata.dataPointsUsed.join(', ')}
+              </span>
+            )}
+            {onSpeak && (
+              <button
+                onClick={() => isSpeaking ? onStopSpeaking?.() : onSpeak(message.content)}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  isSpeaking
+                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600'
+                    : 'hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500'
+                }`}
+                title={isSpeaking ? 'Stop speaking' : 'Listen to response'}
+              >
+                {isSpeaking ? (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  </svg>
+                )}
+              </button>
+            )}
           </div>
         )}
       </div>

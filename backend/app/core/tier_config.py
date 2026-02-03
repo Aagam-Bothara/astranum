@@ -99,7 +99,7 @@ FREE_TIER = TierConfig(
     tier=SubscriptionTier.FREE,
 
     # Limits
-    questions_lifetime=2,
+    questions_lifetime=5,  # Increased from 2 for better conversion
     questions_monthly=None,
     questions_daily=None,
 

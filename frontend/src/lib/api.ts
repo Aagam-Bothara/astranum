@@ -192,6 +192,20 @@ class ApiClient {
     return { data: response.data };
   }
 
+  async getDailyEnergy(): Promise<ApiResponse<{
+    date: string;
+    moon_sign: string;
+    emoji: string;
+    energy: string;
+    summary: string;
+    tip: string;
+    retrograde_planets: string[];
+    retrograde_warning: string | null;
+  }>> {
+    const response = await this.client.get('/charts/daily-energy');
+    return { data: response.data };
+  }
+
   async recomputeChart(mode?: string): Promise<ApiResponse<ChartSnapshot>> {
     const response = await this.client.post('/charts/recompute', { mode });
     return { data: response.data };
